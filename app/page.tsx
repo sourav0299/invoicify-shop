@@ -5,7 +5,7 @@ import Navbar from "@/components/navbar"
 export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white">
-      {/* Hero Section with Navbar */}
+    
       <section className="relative h-screen w-full">
         <Image
           src="/bg.png"
@@ -14,10 +14,10 @@ export default function Home() {
           priority
           className="object-cover brightness-75"
         />
-        {/* Gradient overlay to ensure navbar visibility */}
+      
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent h-40 pointer-events-none"></div>
 
-        {/* Navbar */}
+     
         <Navbar />
 
         {/* Hero Content */}
