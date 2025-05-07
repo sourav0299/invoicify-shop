@@ -45,7 +45,7 @@ const Footer = () => {
             src="/Nayra Jewels.png"
             alt="Nayra Jewels"
             width={160}
-            height={40}
+            height={50}
             className="object-contain"
           />
         </div>

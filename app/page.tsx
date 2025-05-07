@@ -6,6 +6,7 @@ import FeaturedCollection from "@/components/featured-collection"
 import BestSellers from "@/components/best-sellers"
 import FAQ from "@/components/faq"
 import Footer from "@/components/footer"
+import LatestArticles from "@/components/latestarticles"
 
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent h-40 pointer-events-none"></div>
         
         <Navbar />
+        
         
         {/* Hero Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
@@ -38,7 +40,12 @@ export default function Home() {
 
       <BestSellers />
       <FAQ />
+
+      <LatestArticles />
       <Footer />
+
+      
+
     </main>
   )
 }
