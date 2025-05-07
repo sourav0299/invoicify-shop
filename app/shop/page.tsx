@@ -8,7 +8,7 @@ export default function Shop() {
       <Navbar />
 
      
-      <div className="w-[1440px] h-[1756px] mx-auto pt-[96px] pr-[112px] pb-[96px] pl-[112px]">
+      <div className="w-[1440px] h-[1756px] mx-auto pt-[180px] pr-[112px] pb-[96px] pl-[112px]">
         <div className="flex gap-[48px]">
           
           <div className="w-[368px] h-[944px]">

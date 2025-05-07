@@ -1,6 +1,9 @@
+"use client"
+
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Heart } from "lucide-react"
+import { Heart } from 'lucide-react'
 
 interface ProductCardProps {
   id: string
@@ -8,14 +11,34 @@ interface ProductCardProps {
   price: number
   image: string
   isFavorite?: boolean
+  onToggleFavorite?: (id: string, isFavorite: boolean) => void
 }
 
-export default function ProductCard({ id, name, price, image, isFavorite = false }: ProductCardProps) {
+export default function ProductCard({ 
+  id, 
+  name, 
+  price, 
+  image, 
+  isFavorite = false,
+  onToggleFavorite
+}: ProductCardProps) {
+  const [favorite, setFavorite] = useState(isFavorite)
+  
   const formattedPrice = new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(price)
+
+  const handleToggleFavorite = () => {
+    const newFavoriteStatus = !favorite
+    setFavorite(newFavoriteStatus)
+    
+    // Call the parent component's handler if provided
+    if (onToggleFavorite) {
+      onToggleFavorite(id, newFavoriteStatus)
+    }
+  }
 
   return (
     <div className="group relative w-[384px] h-[288px] flex flex-col">
@@ -34,9 +57,12 @@ export default function ProductCard({ id, name, price, image, isFavorite = false
 
         <button
           className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md transition-all hover:bg-[#f5f5f5]"
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+          onClick={handleToggleFavorite}
         >
-          <Heart className={`h-5 w-5 ${isFavorite ? "fill-[#1a1a1a] text-[#1a1a1a]" : "text-[#1a1a1a]"}`} />
+          <Heart 
+            className={`h-5 w-5 ${favorite ? "fill-[#f30808] text-[#f33333]" : "text-[#1a1a1a]"}`} 
+          />
         </button>
       </div>
 

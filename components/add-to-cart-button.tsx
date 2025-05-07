@@ -1,7 +1,7 @@
 "use client"
 
 import { useCartStore } from "@/lib/store"
-// Using a custom button instead of shadcn/ui
+
 
 interface AddToCartButtonProps {
   productName: string
@@ -13,7 +13,7 @@ export default function AddToCartButton({ productName, className }: AddToCartBut
 
   const handleAddToCart = () => {
     inc()
-   
+    
     console.log(`Added ${productName} to cart`)
   }
 
