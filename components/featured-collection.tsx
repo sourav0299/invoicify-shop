@@ -9,7 +9,7 @@ export default function FeaturedCollection() {
           className="bg-black rounded-[32px] overflow-hidden relative"
           style={{ height: "784px" }}
         >
-          {/* Background Image covering the entire card */}
+         
           <div className="absolute inset-0 w-full h-full">
             <Image
               src="/collections/minimal.png"
@@ -20,12 +20,12 @@ export default function FeaturedCollection() {
             />
           </div>
 
-          {/* Collection label at bottom left */}
+         
           <div className="absolute bottom-8 left-8">
             <span className="text-xs tracking-widest uppercase text-white/70">Collection</span>
           </div>
 
-          {/* Content Section on right */}
+         
           <div className="absolute right-8 top-[70%] -translate-y-1/2 max-w-xs text-white">
             <h2 className="text-4xl md:text-5xl font-serif font-normal mb-4">Minimal Me</h2>
             <p className="mb-8 text-sm md:text-base opacity-90 leading-relaxed">
