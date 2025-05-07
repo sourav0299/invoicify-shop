@@ -15,7 +15,7 @@ export default function Home() {
 
         <Navbar />
 
-        {/* Hero Content */}
+
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif tracking-wide mb-4">
             DISCOVER SPARKLE WITH STYLE
@@ -30,9 +30,7 @@ export default function Home() {
       </section>
 
       <CollectionGrid />
-
       <FeaturedCollection />
-
       <BestSellers />
     </main>
   )

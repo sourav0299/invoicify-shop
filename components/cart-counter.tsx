@@ -1,13 +1,16 @@
 "use client"
 
-// Custom cart icon instead of lucide-react
-import { useCartStore } from "@/lib/store"
+import { useRouter } from "next/navigation"
+import { useShoppingCartStore } from "@/lib/store"
 
 export default function CartCounter() {
-  const { count, inc } = useCartStore()
+  const router = useRouter()
+  const { items } = useShoppingCartStore()
+
+  const totalItems = items.reduce((total, item) => total + item.quantity, 0)
 
   return (
-    <button className="p-2 relative" onClick={inc} aria-label="Shopping cart">
+    <button className="p-2 relative" onClick={() => router.push("/cart")} aria-label="Shopping cart">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
@@ -24,9 +27,9 @@ export default function CartCounter() {
         <circle cx="19" cy="21" r="1" />
         <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
       </svg>
-      {count > 0 && (
+      {totalItems > 0 && (
         <span className="absolute -top-1 -right-1 bg-white text-black text-xs rounded-full h-5 w-5 flex items-center justify-center">
-          {count}
+          {totalItems}
         </span>
       )}
     </button>
