@@ -13,7 +13,7 @@ export default function AddToCartButton({ productName, className }: AddToCartBut
 
   const handleAddToCart = () => {
     inc()
-    // In a real app, you would add the product to the cart with more details
+   
     console.log(`Added ${productName} to cart`)
   }
 
