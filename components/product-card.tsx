@@ -34,7 +34,7 @@ export default function ProductCard({
     const newFavoriteStatus = !favorite
     setFavorite(newFavoriteStatus)
     
-    // Call the parent component's handler if provided
+
     if (onToggleFavorite) {
       onToggleFavorite(id, newFavoriteStatus)
     }

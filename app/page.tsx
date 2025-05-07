@@ -18,8 +18,6 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent h-40 pointer-events-none"></div>
         
         <Navbar />
-        
-        
         {/* Hero Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif tracking-wide mb-4">
@@ -35,9 +33,7 @@ export default function Home() {
       </section>
 
       <CollectionGrid />
-
       <FeaturedCollection />
-
       <BestSellers />
       <FAQ />
 
