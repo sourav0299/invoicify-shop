@@ -36,8 +36,8 @@ const FAQ = () => {
   }
 
   return (
-    <div className="relative py-20 px-4 sm:px-8 bg-white">
-      {/* Decorative Images */}
+    <div className="relative py-20 px-4 sm:px-8 bg-white mt-16">
+   
       <div
         className="absolute top-40 left-10 hidden md:block"
         style={{

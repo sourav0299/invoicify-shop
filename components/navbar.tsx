@@ -12,10 +12,8 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("")
   const pathname = usePathname()
 
-  // Determine if we're on the home page (assuming home page has dark background)
   const isHomePage = pathname === "/"
 
-  // Set text color based on current page
   const textColor = isHomePage ? "text-white" : "text-black"
   const borderColor = isHomePage ? "border-white/30" : "border-black/30"
   const placeholderColor = isHomePage ? "placeholder:text-white/50" : "placeholder:text-black/50"
@@ -67,7 +65,7 @@ export default function Navbar() {
             <button aria-label="Wishlist" className={`p-2 ${textColor}`}>
               <Heart className="h-5 w-5" />
             </button>
-            <CartCounter />
+            <CartCounter isHomePage={isHomePage} />
             <button aria-label="Menu" className={`md:hidden p-2 ${textColor}`}>
               <Menu className="h-5 w-5" />
             </button>
