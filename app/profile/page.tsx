@@ -25,8 +25,8 @@ export default function ProfilePage() {
           <div className="w-full md:w-64 shrink-0">
             <div className="bg-gray-50 rounded-lg p-6 mb-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-gray-500" />
+                <div className="w-22 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                  <User className="w-10 h-8 text-gray-500" />
                 </div>
                 <div>
                   <h2 className="font-medium text-lg">{userData.name}</h2>
