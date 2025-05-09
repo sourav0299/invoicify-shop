@@ -85,6 +85,9 @@ export default function Navbar() {
             >
               <Search className="h-5 w-5" />
             </button>
+            <Link href="/profile" aria-label="Account" className={`p-2 ${textColor}`}>
+              <User className="h-5 w-5" />
+            </Link>
             {user ? (
               <>
                 <button
@@ -114,7 +117,7 @@ export default function Navbar() {
             <button aria-label="Wishlist" className={`p-2 ${textColor}`}>
               <Heart className="h-5 w-5" />
             </button>
-            <CartCounter />
+            <CartCounter isHomePage={isHomePage} />
             <button aria-label="Menu" className={`md:hidden p-2 ${textColor}`}>
               <Menu className="h-5 w-5" />
             </button>

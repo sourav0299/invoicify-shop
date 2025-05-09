@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation"
 import { notFound } from "next/navigation"
 import { ChevronDown, Minus, Plus, Star } from "lucide-react"
 import { products } from "@/data/product"
+import { getProductRatings, getProductReviews } from "@/data/review"
 import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
+import FAQ from "@/components/faq"
+import ProductReviews from "@/components/product-reviews"
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -16,10 +19,13 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     notFound()
   }
 
+  // Get product ratings and reviews from data
+  const productRatings = getProductRatings(params.id)
+  const productReviews = getProductReviews(params.id)
+
   const { getQuantity, increment, decrement } = useProductQuantityStore()
   const quantity = getQuantity(params.id)
   const { addItem } = useShoppingCartStore()
-
 
   const formattedPrice = new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -85,7 +91,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star key={star} className="w-5 h-5 fill-[#f8bf3e] text-[#f8bf3e]" />
               ))}
-              <span className="ml-2 text-[#1a1a1a]">(64 Reviews)</span>
+              <span className="ml-2 text-[#1a1a1a]">({productRatings.totalReviews} Reviews)</span>
             </div>
 
             <div className="space-y-2">
@@ -160,7 +166,16 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
+
+        {/* Product Reviews Section */}
+        <ProductReviews
+          averageRating={productRatings.averageRating}
+          totalReviews={productRatings.totalReviews}
+          ratingCounts={productRatings.ratingCounts}
+          reviews={productReviews}
+        />
       </main>
+      <FAQ />
     </div>
   )
 }
