@@ -1,40 +1,9 @@
 
-"use client"
 import Navbar from "@/components/navbar"
 import ProductCard from "@/components/product-card"
-import { useEffect, useState } from "react"
-
-interface Product {
-  id: string
-  name: string
-  price: number
-  image: string
-  isFavorite: boolean
-}
+import { products } from "@/data/product"
 
 export default function Shop() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/products')
-        if (!response.ok) {
-          throw new Error('Failed to fetch products')
-        }
-        const data = await response.json()
-        setProducts(data)
-      } catch (error) {
-        console.error('Error fetching products:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProducts()
-  }, [])
-
   return (
     <div className="bg-white min-h-screen">
       
