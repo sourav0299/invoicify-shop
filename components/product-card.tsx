@@ -105,6 +105,8 @@ export default function ProductCard({
         </Link>
         <p className="text-base font-medium text-[#1a1a1a]">{formattedPrice}</p>
       </div>
+    
+
     </div>
   )
 }

@@ -1,3 +1,4 @@
+
 "use client"
 import Navbar from "@/components/navbar"
 import ProductCard from "@/components/product-card"
@@ -36,7 +37,7 @@ export default function Shop() {
 
   return (
     <div className="bg-white min-h-screen">
-      <Navbar />
+      
 
      
       <div className="w-[1440px] h-[1756px] mx-auto pt-[180px] pr-[112px] pb-[96px] pl-[112px]">
@@ -206,6 +207,7 @@ export default function Shop() {
           </div>
         </div>
       </div>
+      
     </div>
   )
 }

@@ -8,6 +8,10 @@ import { ChevronDown, Minus, Plus, Star } from "lucide-react"
 import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import toast from "react-hot-toast"
+import { getProductRatings, getProductReviews } from "@/data/review"
+import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
+import FAQ from "@/components/faq"
+import ProductReviews from "@/components/product-reviews"
 
 interface Product {
   id: string
@@ -26,11 +30,16 @@ interface Product {
   rating: number
 }
 
+
 export default function ProductPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
+
+  // Get product ratings and reviews from data
+  const productRatings = getProductRatings(params.id)
+  const productReviews = getProductReviews(params.id)
 
   const { getQuantity, increment, decrement } = useProductQuantityStore()
   const quantity = getQuantity(params.id)
@@ -71,7 +80,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   if (!product) {
     notFound()
   }
-
   const formattedPrice = new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -230,7 +238,16 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
+
+        {/* Product Reviews Section */}
+        <ProductReviews
+          averageRating={productRatings.averageRating}
+          totalReviews={productRatings.totalReviews}
+          ratingCounts={productRatings.ratingCounts}
+          reviews={productReviews}
+        />
       </main>
+      <FAQ />
     </div>
   )
 }
