@@ -17,7 +17,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Determine if we're on the home page (assuming home page has dark background)
   const isHomePage = pathname === "/";
 
   useEffect(() => {
