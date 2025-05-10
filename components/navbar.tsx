@@ -114,7 +114,7 @@ export default function Navbar() {
                 <User className="h-5 w-5" />
               </button>
             )}
-            <button aria-label="Wishlist" className={`p-2 ${textColor}`}>
+            <button aria-label="Wishlist" className={`p-2 ${textColor}`} onClick={() => router.push('/wishlist')}>
               <Heart className="h-5 w-5" />
             </button>
             <CartCounter isHomePage={isHomePage} />
