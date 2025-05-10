@@ -9,7 +9,7 @@ import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import toast from "react-hot-toast"
 import { getProductRatings, getProductReviews } from "@/data/review"
-import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
+// import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import FAQ from "@/components/faq"
 import ProductReviews from "@/components/product-reviews"
 

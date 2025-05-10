@@ -85,9 +85,6 @@ export default function Navbar() {
             >
               <Search className="h-5 w-5" />
             </button>
-            <Link href="/profile" aria-label="Account" className={`p-2 ${textColor}`}>
-              <User className="h-5 w-5" />
-            </Link>
             {user ? (
               <>
                 <button
