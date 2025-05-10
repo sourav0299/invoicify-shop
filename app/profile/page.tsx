@@ -1,8 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { User, Package, LogOut, Edit, ShoppingBag } from "lucide-react"
+import { User, Package, LogOut, Edit, ShoppingBag, UserRound } from "lucide-react"
+import { onAuthStateChanged } from "firebase/auth"
+import { auth } from "@/lib/firebase"
+import Image from "next/image"
 
 
 const userData = {
@@ -14,6 +17,15 @@ const userData = {
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"profile" | "orders">("profile")
+  const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }, []);
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -22,15 +34,19 @@ export default function ProfilePage() {
 
         <div className="flex flex-col md:flex-row gap-8">
           
-          <div className="w-full md:w-64 shrink-0">
+          <div className="w-full md:w-80 shrink-0">
             <div className="bg-gray-50 rounded-lg p-6 mb-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-22 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User className="w-10 h-8 text-gray-500" />
-                </div>
+              <Image
+                  width={50}
+                  height={50}
+                  src={user?.photoURL || <UserRound />}
+                  alt="Profile"
+                  className="rounded-full object-cover"
+                />
                 <div>
-                  <h2 className="font-medium text-lg">{userData.name}</h2>
-                  <p className="text-gray-500 text-sm">{userData.email}</p>
+                  <h2 className="font-medium text-lg">{user?.displayName}</h2>
+                  <p className="text-gray-500 text-sm">{user?.email}</p>
                 </div>
               </div>
 
@@ -79,15 +95,15 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Full Name</p>
-                    <p className="font-medium">{userData.name}</p>
+                    <p className="font-medium">{user?.displayName}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Email Address</p>
-                    <p className="font-medium">{userData.email}</p>
+                    <p className="font-medium">{user?.email}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Phone Number</p>
-                    <p className="font-medium">{userData.phone}</p>
+                    <p className="font-medium">{user?.phoneNumber || "NA"}</p>
                   </div>
                 </div>
 
@@ -101,9 +117,9 @@ export default function ProfilePage() {
                   </div>
 
                   <div>
-                    <p className="font-medium">{userData.name}</p>
-                    <p className="text-gray-600 mt-1">{userData.address}</p>
-                    <p className="text-gray-600">{userData.phone}</p>
+                    <p className="font-medium">{user?.displayName}</p>
+                    <p className="text-gray-600 mt-1">{user?.address || 'NA'}</p>
+                    <p className="text-gray-600">{user?.phoneNumber || 'NA'}</p>
                   </div>
                 </div>
               </div>
