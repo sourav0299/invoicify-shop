@@ -9,7 +9,6 @@ import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import toast from "react-hot-toast"
 import { getProductRatings, getProductReviews } from "@/data/review"
-// import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import FAQ from "@/components/faq"
 import ProductReviews from "@/components/product-reviews"
 
@@ -65,6 +64,33 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
     fetchProduct()
   }, [params.id])
+
+  const handleWishlistButton = async() => {
+    if (isFavorite) {
+      toast.error("Product is already in wishlist");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`/api/products/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isFavorite: true }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update wishlist');
+      }
+  
+      setIsFavorite(true);
+      toast.success('Added to wishlist');
+    } catch (error) {
+      console.error('Error updating wishlist:', error);
+      toast.error('Failed to add to wishlist');
+    }
+  };
 
   if (loading) {
     return (
@@ -188,7 +214,9 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="flex gap-4">
-              <button className="flex-1 py-3 px-4 border border-[#1a1a1a] rounded-md text-[#1a1a1a] font-medium">
+              <button 
+              onClick={handleWishlistButton}
+              className="flex-1 py-3 px-4 border border-[#1a1a1a] rounded-md text-[#1a1a1a] font-medium">
                 Add to Wishlist
               </button>
               <button
