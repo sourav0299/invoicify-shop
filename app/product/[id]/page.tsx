@@ -1,26 +1,85 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { notFound } from "next/navigation"
 import { ChevronDown, Minus, Plus, Star } from "lucide-react"
-import { products } from "@/data/product"
 import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
+import toast from "react-hot-toast"
+import { getProductRatings, getProductReviews } from "@/data/review"
+import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
+import FAQ from "@/components/faq"
+import ProductReviews from "@/components/product-reviews"
+
+interface Product {
+  id: string
+  name: string
+  price: number
+  image: string
+  isFavorite: boolean
+  category: string
+  material: string
+  occasion: string
+  modelNumber: string
+  description: string
+  weight: string
+  shopFor: string
+  reviews: number
+  rating: number
+}
+
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const product = products.find((p) => p.id === params.id)
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [isFavorite, setIsFavorite] = useState(false)
 
-  if (!product) {
-    notFound()
-  }
+  // Get product ratings and reviews from data
+  const productRatings = getProductRatings(params.id)
+  const productReviews = getProductReviews(params.id)
 
   const { getQuantity, increment, decrement } = useProductQuantityStore()
   const quantity = getQuantity(params.id)
   const { addItem } = useShoppingCartStore()
 
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/products/${params.id}`)
+        if (!response.ok) {
+          throw new Error('Product not found')
+        }
+        const data = await response.json()
+        setProduct(data)
+        setIsFavorite(data.isFavorite)
+      } catch (error) {
+        console.error('Error fetching product:', error)
+        notFound()
+      } finally {
+        setLoading(false)
+      }
+    }
 
+    fetchProduct()
+  }, [params.id])
+
+  if (loading) {
+    return (
+      <div className="bg-white min-h-screen">
+        <Navbar />
+        <div className="flex justify-center items-center h-screen">
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    notFound()
+  }
   const formattedPrice = new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -32,13 +91,34 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     router.push("/cart")
   }
 
+  const handleToggleFavorite = async () => {
+    try {
+      const response = await fetch(`/api/products/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isFavorite: !isFavorite }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update wishlist')
+      }
+
+      setIsFavorite(!isFavorite)
+      toast.success(isFavorite ? 'Removed from wishlist' : 'Added to wishlist')
+    } catch (error) {
+      console.error('Error updating wishlist:', error)
+      toast.error('Failed to update wishlist')
+    }
+  }
+
   return (
     <div className="bg-white min-h-screen">
       <Navbar />
 
       <main className="pt-[180px] px-4 md:px-8 lg:px-16 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
-          {/* Product Images */}
           <div className="space-y-4">
             <div className="relative w-full aspect-square overflow-hidden rounded-lg">
               <Image
@@ -68,7 +148,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
           <div className="space-y-6">
             <div>
               <h1 className="text-4xl font-serif text-[#1a1a1a]">{product.name}</h1>
-              <p className="text-[#1a1a1a] mt-1">Model number: 123456</p>
+              <p className="text-[#1a1a1a] mt-1">Model number: {product.modelNumber}</p>
             </div>
 
             <div>
@@ -76,16 +156,14 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
 
             <p className="text-[#1a1a1a] leading-relaxed">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-              dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-              ea commodo consequat.
+              {product.description}
             </p>
 
             <div className="flex items-center">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star key={star} className="w-5 h-5 fill-[#f8bf3e] text-[#f8bf3e]" />
               ))}
-              <span className="ml-2 text-[#1a1a1a]">(64 Reviews)</span>
+              <span className="ml-2 text-[#1a1a1a]">({product.reviews} Reviews)</span>
             </div>
 
             <div className="space-y-2">
@@ -160,7 +238,16 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
+
+        {/* Product Reviews Section */}
+        <ProductReviews
+          averageRating={productRatings.averageRating}
+          totalReviews={productRatings.totalReviews}
+          ratingCounts={productRatings.ratingCounts}
+          reviews={productReviews}
+        />
       </main>
+      <FAQ />
     </div>
   )
 }

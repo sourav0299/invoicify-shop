@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import Image from 'next/image';
+import { useState } from "react"
+import Image from "next/image"
+import { ChevronDown } from "lucide-react"
 
 const FAQ = () => {
   const faqs = [
@@ -27,55 +27,77 @@ const FAQ = () => {
       question: "What is your return policy?",
       answer: "You can return products within 30 days of purchase with original packaging.",
     },
-  ];
+  ]
 
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   const toggleFAQ = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
+    setOpenIndex(openIndex === index ? null : index)
+  }
 
   return (
-    <div className="relative min-h-screen py-12 px-4 sm:px-8 flex flex-col justify-center items-center bg-gray-50">
-      {/* Decorative Images */}
-      <div className="absolute top-4 left-4">
-        <Image src="/faq/left-ring.png" alt="Left Ring" width={300} height={300} />
+    <div className="relative py-20 px-4 sm:px-8 bg-white mt-16">
+   
+      <div
+        className="absolute top-40 left-10 hidden md:block"
+        style={{
+          top: "15%",
+          transformOrigin: "center",
+        }}
+      >
+        <Image src="/faq/left-ring.png" alt="Gold Ring" width={180} height={240} className="object-contain" />
       </div>
-      <div className="absolute bottom-3 right-4">
-        <Image src="/faq/right-rings.png" alt="Right Rings" width={250} height={250} />
+      <div
+        className="absolute right-10 hidden md:block"
+        style={{
+          transform: "rotate(11.72deg)",
+          transformOrigin: "center",
+          top: "50%",
+        }}
+      >
+        <Image src="/faq/right-ring.png" alt="Gold Bangles" width={180} height={240} className="object-contain" />
       </div>
 
       {/* FAQ Content */}
-      <div className="max-w-5xl w-full z-10">
-        <h2 className="text-5xl font-serif text-center mb-10 text-[#1a1a1a]">Product FAQs</h2>
-        {faqs.map((faq, index) => (
-          <div
-            key={index}
-            className="bg-white border border-gray-200 rounded-lg mb-6 shadow-md transition-all"
-          >
-            <button
-              onClick={() => toggleFAQ(index)}
-              className="flex justify-between items-center w-full px-6 py-4 text-left"
-            >
-              <span className="text-lg font-medium text-gray-800">{faq.question}</span>
-              <ChevronDown
-                className={`transition-transform duration-300 ${
-                  openIndex === index ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-            <div
-              className={`px-6 text-gray-700 overflow-hidden transition-all duration-300 ease-in-out ${
-                openIndex === index ? 'max-h-48 py-3' : 'max-h-0'
-              }`}
-            >
-              <p className="text-sm">{faq.answer}</p>
-            </div>
-          </div>
-        ))}
+      <div className="mx-auto z-10" style={{ width: "900px", height: "756px" }}>
+        <h2 className="text-5xl font-serif text-center mb-12 text-[#1a1a1a]">Product FAQs</h2>
+
+        <div className="space-y-6">
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index
+
+            return (
+              <div key={index} className="border border-gray-200 rounded-sm overflow-hidden">
+                <button
+                  onClick={() => toggleFAQ(index)}
+                  className="flex justify-between items-center w-full px-8 py-6 text-left"
+                >
+                  <span className="text-xl font-serif text-gray-800">{faq.question}</span>
+                  <div className="flex-shrink-0">
+                    <ChevronDown
+                      className={`h-6 w-6 text-gray-500 transition-transform duration-300 ease-in-out ${
+                        isOpen ? "transform rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </button>
+
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="px-8 pb-6 text-gray-600">
+                    <p className="text-base">{faq.answer}</p>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default FAQ;
+export default FAQ

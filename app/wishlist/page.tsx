@@ -1,8 +1,41 @@
+"use client"
 import Navbar from "@/components/navbar";
 import ProductCard from "@/components/product-card";
 import { products } from "@/data/product"
+import { useEffect, useState } from "react";
+
+interface Product {
+  id: string
+  name: string
+  price: number
+  image: string
+  isFavorite: boolean
+}
 
 export default function wishlist(){
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchFavoriteProducts = async () => {
+      try {
+        const response = await fetch('/api/products')
+        if (!response.ok) {
+          throw new Error('Failed to fetch products')
+        }
+        const data = await response.json()
+        const favoriteProducts = data.filter((product: Product) => product.isFavorite)
+        setProducts(favoriteProducts)
+      } catch (error) {
+        console.error('Error fetching favorite products:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFavoriteProducts()
+  }, [])
+
     return (
         <div className="bg-white min-h-screen">
               <Navbar />
