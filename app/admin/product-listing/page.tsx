@@ -1,77 +1,159 @@
-"use client"
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Select, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { SelectContent } from '@radix-ui/react-select'
-import { Textarea } from '@/components/ui/textarea'
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import toast from "react-hot-toast";
 
 interface ProductFormData {
-  name: string
-  price: number
-  image: string
-  category: string
-  material: string
-  occasion: string
-  modelNumber: string
-  description: string
-  weight: string
-  shopFor: string
+  name: string;
+  price: number;
+  image: string;
+  imageFile?: File | null;
+  isFavorite: boolean;
+  category: string;
+  material: string;
+  occasion: string;
+  modelNumber: string;
+  description: string;
+  weight: string;
+  shopFor: string;
+  reviews: number;
+  rating: number;
 }
 
 export default function ProductListing() {
-  const router = useRouter()
+  const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
+    name: "",
     price: 0,
-    image: '',
-    category: '',
-    material: '',
-    occasion: '',
-    modelNumber: '',
-    description: '',
-    weight: '',
-    shopFor: '',
-  })
+    image: "",
+    isFavorite: false,
+    category: "",
+    material: "",
+    occasion: "",
+    modelNumber: "",
+    description: "",
+    weight: "",
+    shopFor: "",
+    reviews: 0,
+    rating: 0,
+    imageFile: null,
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  if (file.size > 99 * 1024 * 1024) {
+    toast.error("File size must be less than 99MB");
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    toast.error("Only image files are allowed");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/products', { 
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+
+    const result = await response.json();
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
-    }))
+      image: result.secure_url,
+      imageFile: file
+    }));
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    toast.error('Failed to upload image');
   }
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    const productData = {
+      ...formData,
+      imageFile: undefined 
+    };
 
-      if (response.ok) {
-        alert('Product added successfully!')
-        router.refresh()
-      } else {
-        throw new Error('Failed to add product')
-      }
-    } catch (error) {
-      console.error('Error:', error)
-      alert('Failed to add product')
+    const response = await fetch("/api/products", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(productData), 
+    });
+
+    if (response.ok) {
+      toast.success("Product added successfully!");
+      router.refresh();
+      // Reset form
+      setFormData({
+        name: "",
+        price: 0,
+        image: "",
+        isFavorite: false,
+        category: "",
+        material: "",
+        occasion: "",
+        modelNumber: "",
+        description: "",
+        weight: "",
+        shopFor: "",
+        reviews: 0,
+        rating: 0,
+        imageFile: null,
+      });
+    } else {
+      throw new Error("Failed to add product");
     }
+  } catch (error) {
+    console.error("Error:", error);
+    toast.error("Failed to add product");
   }
+};
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }))
-  }
+      [name]: value,
+    }));
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -101,31 +183,44 @@ export default function ProductListing() {
             />
           </div>
           <div>
-            <label className="block mb-2">Image URL</label>
+            <label className="block mb-2">Image Upload</label>
             <Input
-              type="text"
+              type="file"
+              id="picture"
               name="image"
-              value={formData.image}
-              onChange={handleChange}
+              accept="image/*"
+              onChange={handleImageUpload}
               className="w-full p-2 border rounded"
               required
             />
+            {formData.image && (
+              <div className="relative w-32 h-32">
+                <img
+                  src={formData.image}
+                  alt="Product preview"
+                  className="object-cover w-full h-full rounded"
+                />
+              </div>
+            )}
           </div>
           <div>
             <label className="block mb-2">Category</label>
-            <Select name="category" onValueChange={(value) => handleSelectChange('category', value)}>
-                <SelectTrigger className='w-[417px]'>
-                    <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectGroup className='w-[417px] bg-white border rounded'>
-                        <SelectLabel>Category</SelectLabel>
-                        <SelectItem value='Necklace'>Necklace</SelectItem>
-                        <SelectItem value='Ring'>Ring</SelectItem>
-                        <SelectItem value='Earrings'>Earrings</SelectItem>
-                        <SelectItem value='Bracelet'>Bracelet</SelectItem>
-                    </SelectGroup>
-                </SelectContent>
+            <Select
+              name="category"
+              onValueChange={(value) => handleSelectChange("category", value)}
+            >
+              <SelectTrigger className="w-[417px]">
+                <SelectValue placeholder="Select Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup className="w-[417px] bg-white border rounded">
+                  <SelectLabel>Category</SelectLabel>
+                  <SelectItem value="Necklace">Necklace</SelectItem>
+                  <SelectItem value="Ring">Ring</SelectItem>
+                  <SelectItem value="Earrings">Earrings</SelectItem>
+                  <SelectItem value="Bracelet">Bracelet</SelectItem>
+                </SelectGroup>
+              </SelectContent>
             </Select>
           </div>
           <div>
@@ -172,18 +267,21 @@ export default function ProductListing() {
           </div>
           <div>
             <label className="block mb-2">Shop For</label>
-            <Select name="shopFor" onValueChange={(value) => handleSelectChange('shopFor', value)}>
-                <SelectTrigger className='w-[417px]'>
-                    <SelectValue placeholder="Select Target" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectGroup className='w-[417px] bg-white border rounded'>
-                        <SelectLabel>Select Target</SelectLabel>
-                        <SelectItem value='Necklace'>Woman</SelectItem>
-                        <SelectItem value='Ring'>Man</SelectItem>
-                        <SelectItem value='Earrings'>Unisex</SelectItem>
-                    </SelectGroup>
-                </SelectContent>
+            <Select
+              name="shopFor"
+              onValueChange={(value) => handleSelectChange("shopFor", value)}
+            >
+              <SelectTrigger className="w-[417px]">
+                <SelectValue placeholder="Select Target" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup className="w-[417px] bg-white border rounded">
+                  <SelectLabel>Select Target</SelectLabel>
+                  <SelectItem value="Necklace">Woman</SelectItem>
+                  <SelectItem value="Ring">Man</SelectItem>
+                  <SelectItem value="Earrings">Unisex</SelectItem>
+                </SelectGroup>
+              </SelectContent>
             </Select>
           </div>
         </div>
@@ -196,13 +294,10 @@ export default function ProductListing() {
             className="w-full p-2 border rounded h-32 resize-none"
           ></Textarea>
         </div>
-        <Button
-          type="submit"
-          className="text-white px-4 py-2 rounded"
-        >
+        <Button type="submit" className="text-white px-4 py-2 rounded">
           Add Product
         </Button>
       </form>
     </div>
-  )
+  );
 }
