@@ -1,303 +1,273 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import toast from "react-hot-toast";
+"use client"
+import { useState, useRef } from "react"
+import type React from "react"
+
+import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { Trash2, Copy, RotateCw, Upload } from "lucide-react"
 
 interface ProductFormData {
-  name: string;
-  price: number;
-  image: string;
-  imageFile?: File | null;
-  isFavorite: boolean;
-  category: string;
-  material: string;
-  occasion: string;
-  modelNumber: string;
-  description: string;
-  weight: string;
-  shopFor: string;
-  reviews: number;
-  rating: number;
+  name: string
+  price: string
+  discount: string
+  modelNumber: string
+  category: string
+  gender: string
+  description: string
+  images: string[]
 }
 
 export default function ProductListing() {
-  const router = useRouter();
+  const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
-    price: 0,
-    image: "",
-    isFavorite: false,
-    category: "",
-    material: "",
-    occasion: "",
+    price: "",
+    discount: "",
     modelNumber: "",
+    category: "",
+    gender: "",
     description: "",
-    weight: "",
-    shopFor: "",
-    reviews: 0,
-    rating: 0,
-    imageFile: null,
-  });
+    images: [],
+  })
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }));
-  };
-
-const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  if (file.size > 99 * 1024 * 1024) {
-    toast.error("File size must be less than 99MB");
-    return;
+    }))
   }
-
-  if (!file.type.startsWith('image/')) {
-    toast.error("Only image files are allowed");
-    return;
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch('/api/products', { 
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error('Upload failed');
-    }
-
-    const result = await response.json();
-    
-    setFormData(prev => ({
-      ...prev,
-      image: result.secure_url,
-      imageFile: file
-    }));
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    toast.error('Failed to upload image');
-  }
-};
-
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    const productData = {
-      ...formData,
-      imageFile: undefined 
-    };
-
-    const response = await fetch("/api/products", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(productData), 
-    });
-
-    if (response.ok) {
-      toast.success("Product added successfully!");
-      router.refresh();
-      // Reset form
-      setFormData({
-        name: "",
-        price: 0,
-        image: "",
-        isFavorite: false,
-        category: "",
-        material: "",
-        occasion: "",
-        modelNumber: "",
-        description: "",
-        weight: "",
-        shopFor: "",
-        reviews: 0,
-        rating: 0,
-        imageFile: null,
-      });
-    } else {
-      throw new Error("Failed to add product");
-    }
-  } catch (error) {
-    console.error("Error:", error);
-    toast.error("Failed to add product");
-  }
-};
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }));
-  };
+    }))
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const newImages = [...formData.images]
+    for (let i = 0; i < files.length; i++) {
+      if (newImages.length < 5) {
+        const imageUrl = URL.createObjectURL(files[i])
+        newImages.push(imageUrl)
+      }
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      images: newImages,
+    }))
+  }
+
+  const handleRemoveImage = (index: number) => {
+    const newImages = [...formData.images]
+    newImages.splice(index, 1)
+    setFormData((prev) => ({
+      ...prev,
+      images: newImages,
+    }))
+  }
+
+  const handleDuplicateImage = (index: number) => {
+    if (formData.images.length < 5) {
+      const newImages = [...formData.images]
+      newImages.push(formData.images[index])
+      setFormData((prev) => ({
+        ...prev,
+        images: newImages,
+      }))
+    }
+  }
+
+  const handleClickUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Submit logic here
+    console.log(formData)
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Add New Product</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-2">Name</label>
-            <Input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              required
-            />
+    <div className="max-w-3xl mx-auto bg-white p-6">
+      <div className="border-b pb-4 mb-6">
+        <h1 className="text-2xl font-bold">Add new Product</h1>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-6">Add Product details</h2>
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block mb-2 text-sm">Enter Product Name</label>
+              <Input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Enter Text"
+                className="w-full border rounded"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 text-sm">Enter Model number</label>
+              <Input
+                type="text"
+                name="modelNumber"
+                value={formData.modelNumber}
+                onChange={handleChange}
+                placeholder="Enter Text"
+                className="w-full border rounded"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block mb-2">Price</label>
-            <Input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              required
-            />
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block mb-2 text-sm">Category</label>
+              <Select name="category" onValueChange={(value) => handleSelectChange("category", value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="necklace">Necklace</SelectItem>
+                    <SelectItem value="ring">Ring</SelectItem>
+                    <SelectItem value="earrings">Earrings</SelectItem>
+                    <SelectItem value="bracelet">Bracelet</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block mb-2 text-sm">Shop For</label>
+              <Select name="gender" onValueChange={(value) => handleSelectChange("gender", value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="unisex">Unisex</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block mb-2 text-sm">Price</label>
+              <Input
+                type="text"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                placeholder="Enter Price"
+                className="w-full border rounded"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 text-sm">Discount</label>
+              <Input
+                type="text"
+                name="discount"
+                value={formData.discount}
+                onChange={handleChange}
+                placeholder="Enter Discount"
+                className="w-full border rounded"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block mb-2">Image Upload</label>
-            <Input
-              type="file"
-              id="picture"
-              name="image"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="w-full p-2 border rounded"
-              required
-            />
-            {formData.image && (
-              <div className="relative w-32 h-32">
+            <label className="block mb-2 text-sm">Product Description</label>
+            <div className="relative">
+              <Textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Enter Text"
+                className="w-full p-3 border rounded resize-none h-32"
+                maxLength={512}
+              />
+              <div className="absolute bottom-2 right-3 text-xs text-gray-400">{formData.description.length}/512</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-6">Add Product images</h2>
+          <div className="grid grid-cols-3 gap-4">
+            {formData.images.map((image, index) => (
+              <div key={index} className="relative border rounded overflow-hidden h-48">
                 <img
-                  src={formData.image}
-                  alt="Product preview"
-                  className="object-cover w-full h-full rounded"
+                  src={image || "/placeholder.svg"}
+                  alt={`Product ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute right-2 top-2 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(index)}
+                    className="bg-white p-1.5 rounded-md shadow-md"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicateImage(index)}
+                    className="bg-white p-1.5 rounded-md shadow-md"
+                  >
+                    <Copy size={16} />
+                  </button>
+                  <button type="button" className="bg-white p-1.5 rounded-md shadow-md">
+                    <RotateCw size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {formData.images.length < 5 && (
+              <div
+                onClick={handleClickUpload}
+                className="border-2 border-dashed rounded-md h-48 flex flex-col items-center justify-center cursor-pointer"
+              >
+                <Upload size={24} className="mb-2" />
+                <p className="text-center text-sm mb-1">Click to upload or Drag and Drop</p>
+                <p className="text-center text-xs text-gray-500">Max 20 MB file size</p>
+                <p className="text-center text-xs text-gray-500">Instructions</p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                  multiple
                 />
               </div>
             )}
           </div>
-          <div>
-            <label className="block mb-2">Category</label>
-            <Select
-              name="category"
-              onValueChange={(value) => handleSelectChange("category", value)}
-            >
-              <SelectTrigger className="w-[417px]">
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup className="w-[417px] bg-white border rounded">
-                  <SelectLabel>Category</SelectLabel>
-                  <SelectItem value="Necklace">Necklace</SelectItem>
-                  <SelectItem value="Ring">Ring</SelectItem>
-                  <SelectItem value="Earrings">Earrings</SelectItem>
-                  <SelectItem value="Bracelet">Bracelet</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="block mb-2">Material</label>
-            <Input
-              type="text"
-              name="material"
-              value={formData.material}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Occasion</label>
-            <Input
-              type="text"
-              name="occasion"
-              value={formData.occasion}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Model Number</label>
-            <Input
-              type="text"
-              name="modelNumber"
-              value={formData.modelNumber}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Weight</label>
-            <Input
-              type="text"
-              name="weight"
-              value={formData.weight}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Shop For</label>
-            <Select
-              name="shopFor"
-              onValueChange={(value) => handleSelectChange("shopFor", value)}
-            >
-              <SelectTrigger className="w-[417px]">
-                <SelectValue placeholder="Select Target" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup className="w-[417px] bg-white border rounded">
-                  <SelectLabel>Select Target</SelectLabel>
-                  <SelectItem value="Necklace">Woman</SelectItem>
-                  <SelectItem value="Ring">Man</SelectItem>
-                  <SelectItem value="Earrings">Unisex</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
-        <div>
-          <label className="block mb-2">Description</label>
-          <Textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            className="w-full p-2 border rounded h-32 resize-none"
-          ></Textarea>
+
+        <div className="flex justify-center mt-8">
+          <Button type="submit" className="bg-black text-white px-8 py-2 rounded-md hover:bg-gray-800">
+            Save
+          </Button>
         </div>
-        <Button type="submit" className="text-white px-4 py-2 rounded">
-          Add Product
-        </Button>
       </form>
     </div>
-  );
+  )
 }
