@@ -5,8 +5,6 @@ import { Search, Calendar, Plus, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-
-// Order status component with appropriate styling
 const OrderStatus = ({ status }: { status: string }) => {
   let color = ""
   let bgColor = ""
