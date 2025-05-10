@@ -9,9 +9,9 @@ import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import toast from "react-hot-toast"
 import { getProductRatings, getProductReviews } from "@/data/review"
-// import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import FAQ from "@/components/faq"
 import ProductReviews from "@/components/product-reviews"
+import { getAuth } from "firebase/auth"
 
 interface Product {
   id: string
@@ -28,6 +28,14 @@ interface Product {
   shopFor: string
   reviews: number
   rating: number
+}
+
+interface CartItem {
+  productId: string
+  name: string
+  price: number
+  image: string
+  quantity: number
 }
 
 
@@ -66,6 +74,33 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     fetchProduct()
   }, [params.id])
 
+  const handleWishlistButton = async() => {
+    if (isFavorite) {
+      toast.error("Product is already in wishlist");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`/api/products/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isFavorite: true }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update wishlist');
+      }
+  
+      setIsFavorite(true);
+      toast.success('Added to wishlist');
+    } catch (error) {
+      console.error('Error updating wishlist:', error);
+      toast.error('Failed to add to wishlist');
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white min-h-screen">
@@ -86,9 +121,48 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     maximumFractionDigits: 0,
   }).format(product.price)
 
-  const handleAddToCart = () => {
-    addItem(product, quantity)
-    router.push("/cart")
+  const handleAddToCart = async () => {
+    const auth = getAuth()
+    const user = auth.currentUser
+  
+    if (!user?.email) {
+      toast.error("Please login to add items to cart")
+      router.push("/login")
+      return
+    }
+  
+    if (!product) return
+  
+    try {
+      const cartItem: CartItem = {
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        quantity: quantity
+      }
+  
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: user.email,
+          item: cartItem
+        })
+      })
+  
+      if (!response.ok) {
+        throw new Error('Failed to add item to cart')
+      }
+  
+      toast.success('Added to cart successfully')
+      router.push("/cart")
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      toast.error('Failed to add item to cart')
+    }
   }
 
   const handleToggleFavorite = async () => {
@@ -188,7 +262,9 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="flex gap-4">
-              <button className="flex-1 py-3 px-4 border border-[#1a1a1a] rounded-md text-[#1a1a1a] font-medium">
+              <button 
+              onClick={handleWishlistButton}
+              className="flex-1 py-3 px-4 border border-[#1a1a1a] rounded-md text-[#1a1a1a] font-medium">
                 Add to Wishlist
               </button>
               <button

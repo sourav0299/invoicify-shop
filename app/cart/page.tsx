@@ -3,15 +3,34 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Bookmark, ChevronRight, Minus, Plus, ShoppingCart, Tag, Trash2, Truck } from "lucide-react"
 import { useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
+import { getAuth, onAuthStateChanged } from "firebase/auth"
+
+interface CartItem {
+  _id: string
+  productId: string
+  name: string
+  price: number
+  image: string
+  quantity: number
+}
+
+interface CartState {
+  email: string
+  items: CartItem[]
+}
 
 export default function CartPage() {
   const router = useRouter()
+  const auth = getAuth()
+  const user = auth.currentUser;
+  const [cartState, setCartState] = useState<CartState>({ email: '', items: [] })
   const [couponInput, setCouponInput] = useState("")
-  const { items, updateQuantity, removeItem, getSubtotal, getTax, getDiscount, getTotal, couponCode, applyCoupon } =
+  const [loading, setLoading] = useState(true)
+  const { items, couponCode, applyCoupon } =
     useShoppingCartStore()
 
   const handleApplyCoupon = () => {
@@ -30,7 +49,96 @@ export default function CartPage() {
     }).format(price)
   }
 
-  if (items.length === 0) {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.email) {
+        setCartState(prev => ({ ...prev, email: user.email as string }))
+      } else {
+        router.push('/login')
+      }
+    })
+
+    return () => unsubscribe()
+  }, [router])
+
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const email = user?.email
+        if(!email) return
+        
+        const response = await fetch(`/api/cart?email=${email}`)
+        if (!response.ok) throw new Error('Failed to fetch cart')
+        
+        const data = await response.json()
+        setCartState(prev => ({ 
+          ...prev, 
+          items: Array.isArray(data) ? data : [] 
+        }))
+      } catch (error) {
+        console.error('Error fetching cart:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+  
+    fetchCart()
+  }, [user?.email]) 
+
+  const updateQuantity = async (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) return
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user?.email,
+          productId,
+          quantity: newQuantity
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to update quantity')
+      
+      const updatedItems = await response.json()
+      setCartState(prev => ({ ...prev, items: updatedItems }))
+    } catch (error) {
+      console.error('Error updating quantity:', error)
+    }
+  }
+
+  const removeItem = async (productId: string) => {
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user?.email,
+          productId,
+          quantity: 0
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to remove item')
+      
+      const updatedItems = await response.json()
+      setCartState(prev => ({ ...prev, items: updatedItems }))
+    } catch (error) {
+      console.error('Error removing item:', error)
+    }
+  }
+
+  // Calculate totals
+  const getSubtotal = () => {
+    return cartState.items.reduce((total, item) => total + (item.price * item.quantity), 0)
+  }
+
+  const getTax = () => getSubtotal() * 0.18 // 18% tax
+  const getDiscount = () => couponInput ? getSubtotal() * 0.1 : 0 // 10% discount
+  const getTotal = () => getSubtotal() + getTax() - getDiscount()
+
+  if (cartState.items.length === 0) {
     return (
       <div className="bg-white min-h-screen">
         <Navbar />
@@ -109,13 +217,13 @@ export default function CartPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-3xl font-serif mb-6">Cart</h2>
               <div className="divide-y divide-gray-200">
-                {items.map((item) => (
-                  <div key={item.product.id} className="py-6 flex flex-col sm:flex-row">
+                {cartState.items.map((item) => (
+                  <div key={item.productId} className="py-6 flex flex-col sm:flex-row">
                     <div className="flex-shrink-0 w-full sm:w-32 h-32 mb-4 sm:mb-0">
                       <div className="relative w-full h-full">
                         <Image
-                          src={item.product.image || "/placeholder.svg?height=128&width=128&query=jewelry"}
-                          alt={item.product.name}
+                          src={item.image}
+                          alt={item.name}
                           fill
                           className="object-cover rounded-md"
                         />
@@ -124,7 +232,7 @@ export default function CartPage() {
                     <div className="flex-grow sm:ml-6">
                       <div className="flex justify-between">
                         <div>
-                          <h3 className="text-xl font-medium">{item.product.name}</h3>
+                          <h3 className="text-xl font-medium">{item.name}</h3>
                           <p className="text-gray-600">Model number: 123456</p>
                         </div>
                         <div className="flex space-x-2">
@@ -133,7 +241,7 @@ export default function CartPage() {
                           </button>
                           <button
                             className="text-gray-500 hover:text-gray-700"
-                            onClick={() => removeItem(item.product.id)}
+                            onClick={() => removeItem(item.productId)}
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
@@ -144,11 +252,11 @@ export default function CartPage() {
                         <span className="text-sm">Delivery by 10th May</span>
                       </div>
                       <div className="mt-4 flex justify-between items-center">
-                        <p className="text-lg font-medium">{formatPrice(item.product.price)}</p>
+                        <p className="text-lg font-medium">{formatPrice(item.price)}</p>
                         <div className="flex items-center">
                           <button
                             className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-l-md"
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                           >
                             <Minus className="w-4 h-4" />
                           </button>
@@ -157,7 +265,7 @@ export default function CartPage() {
                           </div>
                           <button
                             className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-r-md"
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                           >
                             <Plus className="w-4 h-4" />
                           </button>
