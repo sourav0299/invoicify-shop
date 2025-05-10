@@ -4,6 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Heart } from 'lucide-react'
+import toast from "react-hot-toast"
 
 interface ProductCardProps {
   id: string
@@ -23,6 +24,7 @@ export default function ProductCard({
   onToggleFavorite
 }: ProductCardProps) {
   const [favorite, setFavorite] = useState(isFavorite)
+  const [isUpdating, setIsUpdating] = useState(false)
   
   const formattedPrice = new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -30,13 +32,42 @@ export default function ProductCard({
     maximumFractionDigits: 0,
   }).format(price)
 
-  const handleToggleFavorite = () => {
-    const newFavoriteStatus = !favorite
-    setFavorite(newFavoriteStatus)
+  const handleToggleFavorite = async () => {
+    if (isUpdating) return
     
+    setIsUpdating(true)
+    const newFavoriteStatus = !favorite
 
-    if (onToggleFavorite) {
-      onToggleFavorite(id, newFavoriteStatus)
+    try {
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isFavorite: newFavoriteStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update favorite status')
+      }
+
+      setFavorite(newFavoriteStatus)
+      
+      if (onToggleFavorite) {
+        onToggleFavorite(id, newFavoriteStatus)
+      }
+
+      toast.success(
+        newFavoriteStatus 
+          ? 'Added to Wishlist' 
+          : 'Removed from Wishlist'
+      )
+    } catch (error) {
+      console.error('Error updating favorite status:', error)
+      toast.error('Failed to update favorite status')
+      setFavorite(!newFavoriteStatus)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
