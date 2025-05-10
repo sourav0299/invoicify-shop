@@ -11,6 +11,7 @@ import toast from "react-hot-toast"
 import { getProductRatings, getProductReviews } from "@/data/review"
 import FAQ from "@/components/faq"
 import ProductReviews from "@/components/product-reviews"
+import { getAuth } from "firebase/auth"
 
 interface Product {
   id: string
@@ -27,6 +28,14 @@ interface Product {
   shopFor: string
   reviews: number
   rating: number
+}
+
+interface CartItem {
+  productId: string
+  name: string
+  price: number
+  image: string
+  quantity: number
 }
 
 
@@ -112,9 +121,48 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     maximumFractionDigits: 0,
   }).format(product.price)
 
-  const handleAddToCart = () => {
-    addItem(product, quantity)
-    router.push("/cart")
+  const handleAddToCart = async () => {
+    const auth = getAuth()
+    const user = auth.currentUser
+  
+    if (!user?.email) {
+      toast.error("Please login to add items to cart")
+      router.push("/login")
+      return
+    }
+  
+    if (!product) return
+  
+    try {
+      const cartItem: CartItem = {
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        quantity: quantity
+      }
+  
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: user.email,
+          item: cartItem
+        })
+      })
+  
+      if (!response.ok) {
+        throw new Error('Failed to add item to cart')
+      }
+  
+      toast.success('Added to cart successfully')
+      router.push("/cart")
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      toast.error('Failed to add item to cart')
+    }
   }
 
   const handleToggleFavorite = async () => {
