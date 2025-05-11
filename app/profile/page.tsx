@@ -10,7 +10,7 @@ import {
   ShoppingBag,
   UserRound,
 } from "lucide-react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import Image from "next/image";
 import {
@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 
 interface UserAddress {
   name?: string;
@@ -43,6 +44,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<"profile" | "orders">("profile");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -173,13 +175,16 @@ export default function ProfilePage() {
                   <Package className="w-5 h-5" />
                   <span>Orders</span>
                 </button>
-                <Link
-                  href="/logout"
+                <button
+                  onClick={() => {
+                    signOut(auth)
+                    router.push('/')
+                  }}              
                   className="w-full text-left px-4 py-2 rounded-md flex items-center gap-3 text-red-500 hover:bg-red-50"
                 >
                   <LogOut className="w-5 h-5" />
                   <span>Logout</span>
-                </Link>
+                </button>
               </div>
             </div>
           </div>

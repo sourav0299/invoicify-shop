@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Search, User, Menu, Mic, Heart, UserRound } from "lucide-react";
+import { Search, User, Menu, Mic, Heart, UserRound, Box, Tags, CircleHelp, LogOut } from "lucide-react";
 import CartCounter from "@/components/cart-counter";
 import CategoryNav from "./category-nav";
 import { useEffect, useState } from "react";
@@ -10,6 +10,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,11 +94,11 @@ export default function Navbar() {
               <Search className="h-5 w-5" />
             </button>
             {user ? (
-              <>
-                <button
-                onClick={() => router.push("/profile")}
-                aria-label="Profile"
-                className={`p-2 ${textColor}`}
+              <DropdownMenu>
+              <DropdownMenuTrigger
+                                onClick={() => router.push("/profile")}
+                                aria-label="Profile"
+                                className={`p-2 ${textColor}`}
               >
                 <Image
                   width={30}
@@ -98,9 +107,18 @@ export default function Navbar() {
                   alt="Profile"
                   className="rounded-full object-cover"
                 />
-              </button>
-              <Button variant="destructive" onClick={() => signOut(auth)}>Logout</Button>
-              </>
+                </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-40">
+                <DropdownMenuLabel>{user.displayName}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/profile')}><UserRound />Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/profile')}><Box />My Orders</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/profile')}><Tags />My Coupons</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/contact-us')}><CircleHelp />Help</DropdownMenuItem>
+                <DropdownMenuSeparator/>
+                <DropdownMenuItem onClick={() => signOut(auth)}><LogOut />Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             ) : (
               <button
                 onClick={() => router.push("/login")}
