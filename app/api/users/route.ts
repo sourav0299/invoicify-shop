@@ -9,13 +9,14 @@ interface UserAddress {
   city: string
   state: string
   zipCode: string
+  isDefault?: boolean
 }
 
 interface User {
   email: string
   name: string
   phone?: string
-  address?: UserAddress
+  address?: UserAddress[]
   isComplete: boolean
   createdAt: Date
 }
@@ -34,13 +35,17 @@ const userSchema = new mongoose.Schema({
     trim: true
   },
   phone: String,
-  address: {
+  address: [{
     name: String,
     street: String,
     city: String,
     state: String,
-    zipCode: String
-  },
+    zipCode: String,
+    isDefault: {
+      type: Boolean,
+      default: false
+    }
+  }],
   isComplete: {
     type: Boolean,
     default: false
@@ -58,7 +63,7 @@ export async function GET() {
     await connectDB()
     const users = await User.find({})
       .select('-__v')
-      .sort({ createdAt: -1 }) // Sort by newest first
+      .sort({ createdAt: -1 })
     
     return NextResponse.json(users)
   } catch (error) {

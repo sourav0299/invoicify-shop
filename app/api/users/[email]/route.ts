@@ -8,12 +8,13 @@ interface UserAddress {
     city: string
     state: string
     zipCode: string
+    isDefault?: Boolean
   }
 
 interface UserUpdate {
     name: string
     phone?: string
-    address?: UserAddress
+    address?: UserAddress[]
     isComplete?: boolean
   }
 
@@ -28,13 +29,17 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   phone: String,
-  address: {
+  address: [{
     name: String,
     street: String,
     city: String,
     state: String,
-    zipCode: String
-  },
+    zipCode: String,
+    isDefault: {
+      type: Boolean,
+      default: false
+    }
+  }],
   isComplete: Boolean,
   createdAt: {
     type: Date,
@@ -98,6 +103,29 @@ export async function PUT(
         { status: 400 }
       )
     }
+
+        // Validate addresses if provided
+        if (address?.length) {
+          // Ensure only one default address
+          const defaultAddresses = address.filter(addr => addr.isDefault)
+          if (defaultAddresses.length > 1) {
+            return NextResponse.json(
+              { error: 'Only one address can be set as default' },
+              { status: 400 }
+            )
+          }
+    
+          // Validate required address fields
+          const invalidAddress = address.find(
+            addr => !addr.street || !addr.city || !addr.state || !addr.zipCode
+          )
+          if (invalidAddress) {
+            return NextResponse.json(
+              { error: 'All address fields are required' },
+              { status: 400 }
+            )
+          }
+        }
 
     await connectDB()
 
