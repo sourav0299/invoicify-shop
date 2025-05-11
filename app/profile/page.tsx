@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"profile" | "orders">("profile");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
   const [formData, setFormData] = useState<UserProfile>({
     name: "",
     phone: "",
@@ -95,7 +96,7 @@ export default function ProfilePage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({...formData, isComplete: true}),
         }
       );
 
@@ -104,7 +105,7 @@ export default function ProfilePage() {
       // Refresh the profile data
       await fetchUserProfile(user.email);
       // Close the dialog
-      document.querySelector<HTMLButtonElement>("[data-dialog-close]")?.click();
+      setIsOpen(false)
     } catch (error) {
       console.error("Error updating profile:", error);
     } finally {
@@ -190,7 +191,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-medium">Personal Information</h2>
                   <div className="flex items-center gap-2 text-[#1a1a1a]">
-                    <Dialog>
+                    <Dialog open={isOpen} onOpenChange={setIsOpen}>
                       <DialogTrigger asChild>
                         <Button
                           variant="outline"
@@ -225,6 +226,7 @@ export default function ProfilePage() {
                                 }
                                 placeholder="Jhon Choco"
                                 className="col-span-3"
+                                required
                               />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
@@ -242,6 +244,7 @@ export default function ProfilePage() {
                                 }
                                 placeholder="9876543210"
                                 className="col-span-3 py-2"
+                                required
                               />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
@@ -262,6 +265,7 @@ export default function ProfilePage() {
                                 }
                                 placeholder="143 Avenue street park"
                                 className="col-span-3 py-2"
+                                required
                               />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
@@ -282,6 +286,7 @@ export default function ProfilePage() {
                                 }
                                 placeholder="Albuquerque"
                                 className="col-span-3 py-2"
+                                required
                               />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
@@ -302,6 +307,7 @@ export default function ProfilePage() {
                                 }
                                 placeholder="New Mexico"
                                 className="col-span-3 py-2"
+                                required
                               />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
@@ -322,6 +328,7 @@ export default function ProfilePage() {
                                 }
                                 placeholder="87101"
                                 className="col-span-3 py-2"
+                                required
                               />
                             </div>
                           </div>
