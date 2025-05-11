@@ -167,6 +167,14 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const handlePincode = () => {
+    if(pincode.length === 6){
+      setPincodeChecked(true)
+    }else{
+      toast.error("Invalid Pincode")
+    }
+  }
+
   const handleToggleFavorite = async () => {
     try {
       const response = await fetch(`/api/products/${params.id}`, {
@@ -295,7 +303,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   placeholder="Enter Pincode"
                   className="flex-1 px-4 py-2 border border-[#cccccc] rounded-l-md focus:outline-none"
                 />
-                <button onClick={() => {if(pincode.length === 6) setPincodeChecked(true)}} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
+                <button onClick={() => handlePincode()} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
               </div>
               { isPincodeChecked ? (
                 <p className="text-sm text-red-400">Free Delivery if ordered today Get it by <strong>{FastestDeliveryDate}</strong> to <strong>{SlowestDeliveryDate}</strong></p>
