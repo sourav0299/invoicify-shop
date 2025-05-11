@@ -44,6 +44,8 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [isPincodeChecked, setPincodeChecked] = useState(false)
+  const [pincode, setPincode] = useState('')
 
   // Get product ratings and reviews from data
   const productRatings = getProductRatings(params.id)
@@ -187,6 +189,15 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const formatDeliveryDate = (date: Date) => {
+    return date.getDate() + (date.getDate() === 1 ? 'st' : date.getDate() === 2 ? 'nd' : date.getDate() === 3 ? 'rd' : 'th') + ' ' + 
+      date.toLocaleString('default', { month: 'short' })
+  }
+  const Day = 1*24*60*60*1000
+
+  const FastestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (7 * Day)));
+  const SlowestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (14 * Day)));
+
   return (
     <div className="bg-white min-h-screen">
       <Navbar />
@@ -280,12 +291,17 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               <div className="flex">
                 <input
                   type="text"
-                  placeholder="Enter Pin code"
+                  onChange={(e) => setPincode(e.target.value)}
+                  placeholder="Enter Pincode"
                   className="flex-1 px-4 py-2 border border-[#cccccc] rounded-l-md focus:outline-none"
                 />
-                <button className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
+                <button onClick={() => {if(pincode.length === 6) setPincodeChecked(true)}} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
               </div>
-              <p className="text-sm text-[#1a1a1a]">Please enter PIN code to check delivery time.</p>
+              { isPincodeChecked ? (
+                <p className="text-sm text-red-400">Free Delivery if ordered today Get it by <strong>{FastestDeliveryDate}</strong> to <strong>{SlowestDeliveryDate}</strong></p>
+              ) : (
+                <p className="">Please enter PIN code to check delivery time.</p>
+              )}
             </div>
 
             <div className="pt-4 border-t border-[#cccccc]">

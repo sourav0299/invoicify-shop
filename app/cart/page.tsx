@@ -129,6 +129,15 @@ export default function CartPage() {
     }
   }
 
+  const formatDeliveryDate = (date: Date) => {
+    return date.getDate() + (date.getDate() === 1 ? 'st' : date.getDate() === 2 ? 'nd' : date.getDate() === 3 ? 'rd' : 'th') + ' ' + 
+      date.toLocaleString('default', { month: 'short' })
+  }
+  const Day = 1*24*60*60*1000
+
+  const FastestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (7 * Day)));
+  const SlowestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (14 * Day)));
+
   // Calculate totals
   const getSubtotal = () => {
     return cartState.items.reduce((total, item) => total + (item.price * item.quantity), 0)
@@ -236,9 +245,6 @@ export default function CartPage() {
                           <p className="text-gray-600">Model number: 123456</p>
                         </div>
                         <div className="flex space-x-2">
-                          <button className="text-gray-500 hover:text-gray-700">
-                            <Bookmark className="w-5 h-5" />
-                          </button>
                           <button
                             className="text-gray-500 hover:text-gray-700"
                             onClick={() => removeItem(item.productId)}
@@ -249,7 +255,7 @@ export default function CartPage() {
                       </div>
                       <div className="mt-2 flex items-center">
                         <Truck className="w-4 h-4 mr-2" />
-                        <span className="text-sm">Delivery by 10th May</span>
+                        <span className="text-sm">{`Delivery by ${FastestDeliveryDate} - ${SlowestDeliveryDate}`}</span>
                       </div>
                       <div className="mt-4 flex justify-between items-center">
                         <p className="text-lg font-medium">{formatPrice(item.price)}</p>

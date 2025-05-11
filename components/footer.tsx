@@ -101,7 +101,7 @@ const Footer = () => {
       </div>
       {/*Bottom */}
       <div className="max-w-screen-xl mx-auto px-6 md:px-8 pt-6 pb-10 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
-        <p>© 2022 Perumnas. All rights reserved</p>
+        <p>© 2025 Invoicify. All rights reserved</p>
         <div className="flex space-x-6 mt-4 md:mt-0">
           <a href="#" className="hover:text-white">Privacy Policy</a>
           <a href="#" className="hover:text-white">Terms & Condition</a>
