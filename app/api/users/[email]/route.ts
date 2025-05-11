@@ -50,7 +50,7 @@ export async function GET(
   { params }: { params: { email: string } }
 ) {
   try {
-    const email = decodeURIComponent(params.email).toLowerCase()
+    const email = params.email.toLowerCase()
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -62,13 +62,14 @@ export async function GET(
     }
 
     await connectDB()
-    const user = await User.findOne({ email }).select('-__v')
+    let user = await User.findOne({ email }).select('-__v')
     
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+      user = await User.create({
+        email,
+        name: email.split('@')[0],
+        isComplete: false
+      })
     }
 
     return NextResponse.json(user)
@@ -86,18 +87,9 @@ export async function PUT(
   { params }: { params: { email: string } }
 ) {
   try {
-    const email = decodeURIComponent(params.email).toLowerCase()
+    const email = params.email.toLowerCase()
     const body = await request.json()
     const { name, phone, address, isComplete } = body as UserUpdate
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      )
-    }
 
     // Validate required fields
     if (!name?.trim()) {
@@ -107,36 +99,30 @@ export async function PUT(
       )
     }
 
-    // Validate address if provided
-    if (address) {
-      const { street, city, state, zipCode } = address
-      if (!street || !city || !state || !zipCode) {
-        return NextResponse.json(
-          { error: 'All address fields are required when providing an address' },
-          { status: 400 }
-        )
-      }
-    }
-
     await connectDB()
 
     const updateData = {
       name: name.trim(),
       ...(phone && { phone }),
       ...(address && { address }),
-      ...(typeof isComplete === 'boolean' && { isComplete })
+      isComplete: typeof isComplete === 'boolean' ? isComplete : false
     }
 
     const user = await User.findOneAndUpdate(
       { email },
       updateData,
-      { new: true, runValidators: true }
+      { 
+        new: true, 
+        runValidators: true,
+        upsert: true,
+        setDefaultsOnInsert: true
+      }
     )
 
     if (!user) {
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
+        { error: 'Failed to update user' },
+        { status: 500 }
       )
     }
 
