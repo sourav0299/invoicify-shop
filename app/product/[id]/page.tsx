@@ -45,6 +45,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
   const [isPincodeChecked, setPincodeChecked] = useState(false)
+  const [pincode, setPincode] = useState('')
 
   // Get product ratings and reviews from data
   const productRatings = getProductRatings(params.id)
@@ -290,10 +291,11 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               <div className="flex">
                 <input
                   type="text"
-                  placeholder="Enter Pin code"
+                  onChange={(e) => setPincode(e.target.value)}
+                  placeholder="Enter Pincode"
                   className="flex-1 px-4 py-2 border border-[#cccccc] rounded-l-md focus:outline-none"
                 />
-                <button onClick={() => setPincodeChecked(true)} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
+                <button onClick={() => {if(pincode.length === 6) setPincodeChecked(true)}} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
               </div>
               { isPincodeChecked ? (
                 <p className="text-sm text-red-400">Free Delivery if ordered today Get it by <strong>{FastestDeliveryDate}</strong> to <strong>{SlowestDeliveryDate}</strong></p>
