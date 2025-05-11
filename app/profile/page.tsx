@@ -6,6 +6,14 @@ import { User, Package, LogOut, Edit, ShoppingBag, UserRound } from "lucide-reac
 import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import Image from "next/image"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 
 const userData = {
