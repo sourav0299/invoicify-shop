@@ -259,27 +259,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               <span className="ml-2 text-[#1a1a1a]">({product.reviews} Reviews)</span>
             </div>
 
-            <div className="space-y-2">
-              <p className="font-medium text-[#1a1a1a]">Quantity</p>
-              <div className="flex items-center">
-                <button
-                  className="w-10 h-10 flex items-center justify-center border border-[#1a1a1a] rounded-l-md"
-                  onClick={() => decrement(params.id)}
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <div className="w-12 h-10 flex items-center justify-center border-t border-b border-[#1a1a1a]">
-                  {quantity}
-                </div>
-                <button
-                  className="w-10 h-10 flex items-center justify-center border border-[#1a1a1a] rounded-r-md"
-                  onClick={() => increment(params.id)}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
             <div className="flex gap-4">
               <button 
               onClick={handleWishlistButton}
