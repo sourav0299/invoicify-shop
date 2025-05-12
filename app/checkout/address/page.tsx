@@ -2,20 +2,77 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ShoppingCart, Home, Building2 } from "lucide-react"
 import { useShoppingCartStore, useAddressStore, type Address } from "@/lib/store"
 import Navbar from "@/components/navbar"
+import { getAuth, onAuthStateChanged } from "firebase/auth"
+import toast from "react-hot-toast"
+
+
+interface UserResponse {
+  _id: string
+  email: string
+  name: string
+  phone: string
+  address: Array<{
+    _id: string
+    name: string
+    street: string
+    city: string
+    state: string
+    zipCode: string
+    isDefault: boolean
+  }>
+  isComplete: boolean
+  createdAt: string
+}
 
 export default function AddressPage() {
   const router = useRouter()
+  const auth = getAuth()
+  const user = auth.currentUser
   const { items, getSubtotal, getTax, getDiscount, getTotal, clearCart } = useShoppingCartStore()
-  const { addresses, selectedAddressId, selectAddress, removeAddress } = useAddressStore()
+  const [addresses, setAddresses] = useState<UserResponse['address']>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('')
+  // const { addresses, selectedAddressId, selectAddress, removeAddress } = useAddressStore()
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const fetchAddresses = async (email : string ) => {
+    try{
+      const response = await fetch(`/api/users/${email}`)
+      if(!response.ok){
+        throw new Error("Failed to fetch addresses")
+      }
+
+      const data : UserResponse = await response.json()
+      if(data.address?.length){
+        setAddresses(data.address)
+        setSelectedAddressId(data.address[0]._id)
+      }
+    }catch(error){
+      console.error("Error in fetching addresses", error);
+      toast.error("Failed to fetch")
+    }finally{
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user?.email) {
+        fetchAddresses(user.email)
+      } else {
+        router.push('/login')
+      }})
+
+      return () => unsubscribe()
+  }, [auth, router])
 
   
   const formatPrice = (price: number) => {
@@ -37,10 +94,31 @@ export default function AddressPage() {
     }
   }
 
+  const handleRemoveAddress = async(address: any) => {
+    const email = user?.email
+    if(!email) return
+    try{
+      const response = await fetch(`/api/users/${email}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: addresses.filter(a => a._id !== address._id)
+        })
+      })
+      if(response.ok){
+        setAddresses(prev => prev.filter(a => a._id !== address._id))
+      }
+      toast.success("Address Removed")
+    }catch(error){
+      console.error('Error removing address: ', error)
+    }
+  }
+
   const handleEdit = (id: string) => {
     setEditingAddressId(id)
     setShowAddressForm(true)
   }
+  
 
   if (orderPlaced) {
     return (
@@ -148,6 +226,8 @@ export default function AddressPage() {
               {showAddressForm ? (
                 <AddressForm
                   editingAddressId={editingAddressId}
+                  addresses={addresses}
+                  onAddressUpdate={fetchAddresses}
                   onCancel={() => {
                     setShowAddressForm(false)
                     setEditingAddressId(null)
@@ -156,39 +236,38 @@ export default function AddressPage() {
               ) : (
                 <div className="space-y-6">
                   {addresses.map((address) => (
-                    <div key={address.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                    <div key={address._id} className="border-b border-gray-200 pb-6 last:border-b-0">
                       <div className="flex items-start">
                         <div className="flex items-center h-5 mt-1">
                           <input
-                            id={`address-${address.id}`}
+                            id={`address-${address._id}`}
                             name="address"
                             type="radio"
                             className="h-4 w-4 text-[#108a07] border-gray-300 focus:ring-[#108a07]"
-                            checked={selectedAddressId === address.id}
-                            onChange={() => selectAddress(address.id)}
+                            checked={selectedAddressId === address._id}
+                            onChange={() => setSelectedAddressId(address._id)}
                           />
                         </div>
                         <div className="ml-3 text-sm">
-                          <label htmlFor={`address-${address.id}`} className="font-medium text-gray-900 text-lg">
-                            {address.type}
+                          <label htmlFor={`address-${address._id}`} className="font-medium text-gray-900 text-lg">
+                            {address.name || 'Home'}
                           </label>
                           <div className="mt-2 text-gray-700">
                             <p>
                               {address.street} {address.city}, {address.state} {address.zipCode}
                             </p>
-                            <p className="mt-1">Mobile Number: {address.mobileNumber}</p>
                           </div>
-                          {selectedAddressId === address.id && (
+                          {selectedAddressId === address._id && (
                             <div className="mt-4 flex space-x-4">
                               <button
                                 className="px-4 py-2 border border-gray-300 rounded-md text-[#1a1a1a] hover:bg-gray-50"
-                                onClick={() => removeAddress(address.id)}
+                                onClick={() => handleRemoveAddress(address)}
                               >
                                 Remove
                               </button>
                               <button
                                 className="px-4 py-2 border border-gray-300 rounded-md text-[#1a1a1a] hover:bg-gray-50"
-                                onClick={() => handleEdit(address.id)}
+                                onClick={() => handleEdit(address._id)}
                               >
                                 Edit
                               </button>
@@ -202,6 +281,8 @@ export default function AddressPage() {
               )}
             </div>
           </div>
+
+          
 
           {/* Order Summary */}
           <div className="md:col-span-1">
@@ -270,63 +351,96 @@ export default function AddressPage() {
 interface AddressFormProps {
   editingAddressId: string | null
   onCancel: () => void
+  addresses: UserResponse['address']
+  onAddressUpdate: (email: string) => Promise<void>
 }
 
-function AddressForm({ editingAddressId, onCancel }: AddressFormProps) {
-  const { addresses, addAddress, updateAddress } = useAddressStore()
-  const editingAddress = editingAddressId ? addresses.find((addr) => addr.id === editingAddressId) : null
+function AddressForm({ editingAddressId, onCancel, addresses, onAddressUpdate }: AddressFormProps) {
+  const auth = getAuth()
+  const editingAddress = editingAddressId 
+    ? addresses.find(addr => addr._id === editingAddressId) 
+    : null
 
-  const [formData, setFormData] = useState<Omit<Address, "id">>({
-    type: editingAddress?.type || "Home",
-    street: editingAddress?.street || "",
-    city: editingAddress?.city || "",
-    state: editingAddress?.state || "",
-    zipCode: editingAddress?.zipCode || "",
-    mobileNumber: editingAddress?.mobileNumber || "",
+  const [formData, setFormData] = useState({
+    name: editingAddress?.name || 'Home',
+    street: editingAddress?.street || '',
+    city: editingAddress?.city || '',
+    state: editingAddress?.state || '',
+    zipCode: editingAddress?.zipCode || '',
+    isDefault: editingAddress?.isDefault || false
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleTypeChange = (type: string) => {
-    setFormData((prev) => ({ ...prev, type }))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (editingAddressId) {
-      updateAddress(editingAddressId, formData)
-    } else {
-      addAddress(formData)
+    if (!auth.currentUser?.email) return
+
+    try {
+
+      const userResponse = await fetch(`/api/users/${auth.currentUser.email}`)
+      const userData = await userResponse.json()
+
+      const newAddress = {
+        ...formData,
+        name: formData.name.trim() || 'Home',
+        _id: editingAddressId || Date.now().toString(),
+        isDefault: false
+      }
+
+      const updatedAddresses = editingAddressId
+        ? addresses.map(addr => 
+            addr._id === editingAddressId 
+              ? newAddress
+              : addr
+          )
+        : [...addresses, newAddress]
+
+      const response = await fetch(`/api/users/${auth.currentUser.email}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: userData.name,
+          phone: userData.phone,
+          address: updatedAddresses,
+          isComplete: userData.isComplete
+        }),
+      })
+
+      if (!response.ok){
+        const error = await response.json()
+        throw new Error('Failed to save address', error.error)
+      }
+
+      await onAddressUpdate(auth.currentUser.email)
+      onCancel()
+      toast.success(editingAddressId ? 'Address updated' : 'Address added')
+    } catch (error) {
+      console.error('Error saving address:', error)
+      toast.error('Failed to save address')
     }
-    onCancel()
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex space-x-4 mb-6">
-        <button
-          type="button"
-          className={`flex items-center px-4 py-2 rounded-md ${
-            formData.type === "Home" ? "bg-[#108a07] text-white" : "border border-gray-300 text-gray-700"
-          }`}
-          onClick={() => handleTypeChange("Home")}
-        >
-          <Home className="w-4 h-4 mr-2" />
-          Home
-        </button>
-        <button
-          type="button"
-          className={`flex items-center px-4 py-2 rounded-md ${
-            formData.type === "Office" ? "bg-[#108a07] text-white" : "border border-gray-300 text-gray-700"
-          }`}
-          onClick={() => handleTypeChange("Office")}
-        >
-          <Building2 className="w-4 h-4 mr-2" />
-          Office
-        </button>
+      <div>
+      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+          Name <span className="text-gray-500">(Optional)</span>
+        </label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          placeholder="Home, Office, etc."
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#108a07]"
+        />
       </div>
 
       <div>
@@ -375,35 +489,21 @@ function AddressForm({ editingAddressId, onCancel }: AddressFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
-            ZIP Code
-          </label>
-          <input
-            type="text"
-            id="zipCode"
-            name="zipCode"
-            value={formData.zipCode}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#108a07]"
-          />
-        </div>
-        <div>
-          <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700 mb-1">
-            Mobile Number
-          </label>
-          <input
-            type="tel"
-            id="mobileNumber"
-            name="mobileNumber"
-            value={formData.mobileNumber}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#108a07]"
-          />
-        </div>
+      <div>
+        <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
+          ZIP Code
+        </label>
+        <input
+          type="text"
+          id="zipCode"
+          name="zipCode"
+          value={formData.zipCode}
+          onChange={handleChange}
+          required
+          pattern="[0-9]{6}"
+          maxLength={6}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#108a07]"
+        />
       </div>
 
       <div className="flex justify-end space-x-4 pt-4">
@@ -414,7 +514,10 @@ function AddressForm({ editingAddressId, onCancel }: AddressFormProps) {
         >
           Cancel
         </button>
-        <button type="submit" className="px-4 py-2 bg-[#108a07] text-white rounded-md hover:bg-[#0c7206]">
+        <button 
+          type="submit" 
+          className="px-4 py-2 bg-[#108a07] text-white rounded-md hover:bg-[#0c7206]"
+        >
           {editingAddressId ? "Update Address" : "Save Address"}
         </button>
       </div>
