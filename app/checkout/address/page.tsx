@@ -10,6 +10,8 @@ import { useShoppingCartStore, useAddressStore, type Address } from "@/lib/store
 import Navbar from "@/components/navbar"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
 import toast from "react-hot-toast"
+import Confetti from "react-confetti"
+import { useWindowSize } from "react-use"
 
 
 interface UserResponse {
@@ -42,6 +44,7 @@ export default function AddressPage() {
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [pop, setPop] = useState(false)
 
   const fetchAddresses = async (email : string ) => {
     try{
@@ -87,10 +90,11 @@ export default function AddressPage() {
     if (selectedAddressId) {
      
       setOrderPlaced(true)
+      setPop(true)
       setTimeout(() => {
         clearCart()
         router.push("/shop")
-      }, 3000)
+      }, 9000)
     }
   }
 
@@ -118,12 +122,14 @@ export default function AddressPage() {
     setEditingAddressId(id)
     setShowAddressForm(true)
   }
-  
+
+  const { width, height} = useWindowSize()
 
   if (orderPlaced) {
     return (
       <div className="bg-white min-h-screen">
         <Navbar />
+        {pop && <Confetti width={width} height={height} />}
         <div className="pt-[180px] px-4 md:px-8 lg:px-16 max-w-3xl mx-auto text-center">
           <div className="flex justify-center mb-6">
             <svg
