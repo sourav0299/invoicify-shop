@@ -4,8 +4,9 @@ import type React from "react"
 
 import Link from "next/link"
 import Image from "next/image"
-import { Search, User, Menu, Mic, Heart, UserRound, Box, Tags, CircleHelp, LogOut, X } from "lucide-react"
+import { Search, User, Menu, Mic, UserRound, Box, Tags, CircleHelp, LogOut, X } from "lucide-react"
 import CartCounter from "@/components/cart-counter"
+import WishlistCounter from "@/components/wishlist-counter"
 import CategoryNav from "./category-nav"
 import { useEffect, useState, useRef } from "react"
 import { usePathname, useRouter } from "next/navigation"
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { debounce } from "@/lib/debounce"
 
-// Add this at the top of the file, after the imports
+
 declare global {
   interface Window {
     webkitSpeechRecognition: any
@@ -56,7 +57,6 @@ export default function Navbar() {
     return () => unsubscribe()
   }, [])
 
-  
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -87,7 +87,6 @@ export default function Navbar() {
 
       const data = await response.json()
 
-      
       const products = Array.isArray(data) ? data : data.products || []
 
       setSearchResults(products)
@@ -143,19 +142,18 @@ export default function Navbar() {
     recognition.start()
   }
 
-  // Navigate to product page and clear search
+  
   const handleProductClick = (productId: string) => {
     router.push(`/product/${productId}`)
     setShowResults(false)
     setSearchQuery("")
   }
 
-  // Navigate to search results page
+  
   const handleViewAllResults = () => {
     router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
     setShowResults(false)
   }
-
 
   const clearSearch = () => {
     setSearchQuery("")
@@ -163,7 +161,6 @@ export default function Navbar() {
     setShowResults(false)
   }
 
-  
   const textColor = isHomePage ? "text-white" : "text-black"
   const borderColor = isHomePage ? "border-white/30" : "border-black/30"
   const placeholderColor = isHomePage ? "placeholder:text-white/50" : "placeholder:text-black/50"
@@ -321,9 +318,7 @@ export default function Navbar() {
                 <User className="h-5 w-5" />
               </button>
             )}
-            <button aria-label="Wishlist" className={`p-2 ${textColor}`} onClick={() => router.push("/wishlist")}>
-              <Heart className="h-5 w-5" />
-            </button>
+            <WishlistCounter isHomePage={isHomePage} />
             <CartCounter isHomePage={isHomePage} />
             <button aria-label="Menu" className={`md:hidden p-2 ${textColor}`}>
               <Menu className="h-5 w-5" />

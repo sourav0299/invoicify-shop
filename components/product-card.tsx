@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Heart } from 'lucide-react'
@@ -32,6 +32,10 @@ export default function ProductCard({
     maximumFractionDigits: 0,
   }).format(price)
 
+  useEffect(() => {
+    setFavorite(isFavorite)
+  }, [isFavorite])
+
   const handleToggleFavorite = async () => {
     if (isUpdating) return
     
@@ -62,6 +66,9 @@ export default function ProductCard({
           ? 'Added to Wishlist' 
           : 'Removed from Wishlist'
       )
+
+   
+      updateWishlistCount()
     } catch (error) {
       console.error('Error updating favorite status:', error)
       toast.error('Failed to update favorite status')
@@ -69,6 +76,33 @@ export default function ProductCard({
     } finally {
       setIsUpdating(false)
     }
+  }
+
+
+  const updateWishlistCount = async () => {
+    try {
+      const response = await fetch("/api/products")
+      if (!response.ok) throw new Error("Failed to fetch products")
+
+      const data = await response.json()
+      const favoriteProducts = data.filter((product: any) => product.isFavorite)
+
+     
+      dispatchWishlistUpdatedEvent(favoriteProducts.length)
+    } catch (error) {
+      console.error("Error updating wishlist count:", error)
+    }
+  }
+
+
+  const dispatchWishlistUpdatedEvent = (count: number) => {
+    if (typeof window === "undefined") return
+
+    const event = new CustomEvent("wishlistUpdated", {
+      detail: { count },
+    })
+
+    window.dispatchEvent(event)
   }
 
   return (
@@ -105,8 +139,6 @@ export default function ProductCard({
         </Link>
         <p className="text-base font-medium text-[#1a1a1a]">{formattedPrice}</p>
       </div>
-    
-
     </div>
   )
 }

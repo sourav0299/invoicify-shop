@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Bookmark, ChevronRight, Minus, Plus, ShoppingCart, Tag, Trash2, Truck } from "lucide-react"
+import { ChevronRight, Minus, Plus, ShoppingCart, Tag, Trash2, Truck } from "lucide-react"
 import { useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
@@ -26,12 +26,11 @@ interface CartState {
 export default function CartPage() {
   const router = useRouter()
   const auth = getAuth()
-  const user = auth.currentUser;
-  const [cartState, setCartState] = useState<CartState>({ email: '', items: [] })
+  const user = auth.currentUser
+  const [cartState, setCartState] = useState<CartState>({ email: "", items: [] })
   const [couponInput, setCouponInput] = useState("")
   const [loading, setLoading] = useState(true)
-  const { items, couponCode, applyCoupon } =
-    useShoppingCartStore()
+  const { items, couponCode, applyCoupon } = useShoppingCartStore()
 
   const handleApplyCoupon = () => {
     if (couponInput.trim()) {
@@ -40,7 +39,6 @@ export default function CartPage() {
     }
   }
 
-  
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -52,9 +50,9 @@ export default function CartPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && user.email) {
-        setCartState(prev => ({ ...prev, email: user.email as string }))
+        setCartState((prev) => ({ ...prev, email: user.email as string }))
       } else {
-        router.push('/login')
+        router.push("/login")
       }
     })
 
@@ -65,86 +63,112 @@ export default function CartPage() {
     const fetchCart = async () => {
       try {
         const email = user?.email
-        if(!email) return
-        
+        if (!email) return
+
         const response = await fetch(`/api/cart?email=${email}`)
-        if (!response.ok) throw new Error('Failed to fetch cart')
-        
+        if (!response.ok) throw new Error("Failed to fetch cart")
+
         const data = await response.json()
-        setCartState(prev => ({ 
-          ...prev, 
-          items: Array.isArray(data) ? data : [] 
+        const cartItems = Array.isArray(data) ? data : []
+
+        setCartState((prev) => ({
+          ...prev,
+          items: cartItems,
         }))
+
+        // Dispatch cart updated event for the navbar counter
+        dispatchCartUpdatedEvent(cartItems.length)
       } catch (error) {
-        console.error('Error fetching cart:', error)
+        console.error("Error fetching cart:", error)
       } finally {
         setLoading(false)
       }
     }
-  
+
     fetchCart()
-  }, [user?.email]) 
+  }, [user?.email])
+
+  // Function to dispatch cart updated event
+  const dispatchCartUpdatedEvent = (count: number) => {
+    if (typeof window === "undefined") return
+
+    const event = new CustomEvent("cartUpdated", {
+      detail: { count },
+    })
+
+    window.dispatchEvent(event)
+  }
 
   const updateQuantity = async (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return
 
     try {
-      const response = await fetch('/api/cart', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/cart", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: user?.email,
           productId,
-          quantity: newQuantity
-        })
+          quantity: newQuantity,
+        }),
       })
 
-      if (!response.ok) throw new Error('Failed to update quantity')
-      
+      if (!response.ok) throw new Error("Failed to update quantity")
+
       const updatedItems = await response.json()
-      setCartState(prev => ({ ...prev, items: updatedItems }))
+      setCartState((prev) => ({ ...prev, items: updatedItems }))
+
+      // Update cart counter in navbar
+      dispatchCartUpdatedEvent(updatedItems.length)
     } catch (error) {
-      console.error('Error updating quantity:', error)
+      console.error("Error updating quantity:", error)
     }
   }
 
   const removeItem = async (productId: string) => {
     try {
-      const response = await fetch('/api/cart', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/cart", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: user?.email,
           productId,
-          quantity: 0
-        })
+          quantity: 0,
+        }),
       })
 
-      if (!response.ok) throw new Error('Failed to remove item')
-      
+      if (!response.ok) throw new Error("Failed to remove item")
+
       const updatedItems = await response.json()
-      setCartState(prev => ({ ...prev, items: updatedItems }))
+      setCartState((prev) => ({ ...prev, items: updatedItems }))
+
+      // Update cart counter in navbar
+      dispatchCartUpdatedEvent(updatedItems.length)
     } catch (error) {
-      console.error('Error removing item:', error)
+      console.error("Error removing item:", error)
     }
   }
 
   const formatDeliveryDate = (date: Date) => {
-    return date.getDate() + (date.getDate() === 1 ? 'st' : date.getDate() === 2 ? 'nd' : date.getDate() === 3 ? 'rd' : 'th') + ' ' + 
-      date.toLocaleString('default', { month: 'short' })
+    return (
+      date.getDate() +
+      (date.getDate() === 1 ? "st" : date.getDate() === 2 ? "nd" : date.getDate() === 3 ? "rd" : "th") +
+      " " +
+      date.toLocaleString("default", { month: "short" })
+    )
   }
-  const Day = 1*24*60*60*1000
+  const Day = 1 * 24 * 60 * 60 * 1000
 
-  const FastestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (7 * Day)));
-  const SlowestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (14 * Day)));
+  const FastestDeliveryDate = formatDeliveryDate(new Date(Date.now() + 7 * Day))
+  const SlowestDeliveryDate = formatDeliveryDate(new Date(Date.now() + 14 * Day))
 
   // Calculate totals
   const getSubtotal = () => {
-    return cartState.items.reduce((total, item) => total + (item.price * item.quantity), 0)
+    return cartState.items.reduce((total, item) => total + item.price * item.quantity, 0)
   }
 
   const getTax = () => getSubtotal() * 0.18 // 18% tax
-  const getDiscount = () => couponInput ? getSubtotal() * 0.1 : 0 // 10% discount
+  const getDiscount = () => (couponInput ? getSubtotal() * 0.1 : 0) // 10% discount
   const getTotal = () => getSubtotal() + getTax() - getDiscount()
 
   if (cartState.items.length === 0) {
@@ -231,7 +255,7 @@ export default function CartPage() {
                     <div className="flex-shrink-0 w-full sm:w-32 h-32 mb-4 sm:mb-0">
                       <div className="relative w-full h-full">
                         <Image
-                          src={item.image}
+                          src={item.image || "/placeholder.svg"}
                           alt={item.name}
                           fill
                           className="object-cover rounded-md"
