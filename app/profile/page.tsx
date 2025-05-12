@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 interface UserAddress {
   name?: string;
@@ -92,9 +93,8 @@ export default function ProfilePage() {
 
       if (!response.ok) throw new Error("Failed to update profile");
 
-      // Refresh the profile data
       await fetchUserProfile(user.email);
-      // Close the dialog
+      toast.success("Default address Changed Successfully")
       setIsOpen(false)
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -246,14 +246,14 @@ export default function ProfilePage() {
                               </Label>
                               <Input
                                 id="street"
-                                value={formData.address?.street}
+                                value={formData.address?.[0]?.street}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    address: {
-                                      ...formData.address,
+                                    address: [{
+                                      ...formData.address?.[0],
                                       street: e.target.value,
-                                    },
+                                    }],
                                   })
                                 }
                                 placeholder="143 Avenue street park"
@@ -267,14 +267,14 @@ export default function ProfilePage() {
                               </Label>
                               <Input
                                 id="city"
-                                value={formData.address?.city}
+                                value={formData.address?.[0]?.city}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    address: {
-                                      ...formData.address,
+                                    address: [{
+                                      ...formData.address?.[0],
                                       city: e.target.value,
-                                    },
+                                    }],
                                   })
                                 }
                                 placeholder="Albuquerque"
@@ -288,14 +288,14 @@ export default function ProfilePage() {
                               </Label>
                               <Input
                                 id="state"
-                                value={formData.address?.state}
+                                value={formData.address?.[0]?.state}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    address: {
-                                      ...formData.address,
+                                    address: [{
+                                      ...formData.address?.[0],
                                       state: e.target.value,
-                                    },
+                                    }],
                                   })
                                 }
                                 placeholder="New Mexico"
@@ -309,14 +309,14 @@ export default function ProfilePage() {
                               </Label>
                               <Input
                                 id="zipcode"
-                                value={formData.address?.zipCode}
+                                value={formData.address?.[0]?.zipCode}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    address: {
-                                      ...formData.address,
+                                    address: [{
+                                      ...formData.address?.[0],
                                       zipCode: e.target.value,
-                                    },
+                                    }],
                                   })
                                 }
                                 placeholder="87101"
