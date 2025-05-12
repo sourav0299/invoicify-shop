@@ -32,6 +32,21 @@ interface UserResponse {
   createdAt: string
 }
 
+interface CartItem {
+  productId: string
+  name: string
+  price: number
+  image: string
+  quantity: number
+}
+
+interface CartTotals {
+  subtotal: number
+  tax: number
+  discount: number
+  total: number
+}
+
 export default function AddressPage() {
   const router = useRouter()
   const auth = getAuth()
@@ -45,6 +60,46 @@ export default function AddressPage() {
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [loading, setLoading] = useState(true)
   const [pop, setPop] = useState(false)
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [cartTotals, setCartTotals] = useState<CartTotals>({
+    subtotal: 0,
+    tax: 0,
+    discount: 0,
+    total: 0
+  })
+
+  const calculateTotals = (items: CartItem[]) => {
+    const subtotal = items.reduce((sum, item) => 
+      sum + (item.price * item.quantity), 0)
+    const tax = Math.round(subtotal * 0.18)
+    const discount = 0
+    const total = subtotal + tax - discount
+
+    return { subtotal, tax, discount, total }
+  }
+
+  const fetchCartItems = async (email: string) => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/cart?email=${email}`)
+      if (!response.ok) throw new Error("Failed to fetch cart")
+      
+      const items: CartItem[] = await response.json()
+      if (!items.length) {
+        router.push('/shop')
+        toast.error("Your cart is empty")
+        return
+      }
+
+      setCartItems(items)
+      setCartTotals(calculateTotals(items))
+    } catch (error) {
+      console.error("Error fetching cart:", error)
+      toast.error("Failed to fetch cart items")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchAddresses = async (email : string ) => {
     try{
@@ -70,6 +125,7 @@ export default function AddressPage() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user?.email) {
         fetchAddresses(user.email)
+        fetchCartItems(user.email)
       } else {
         router.push('/login')
       }})
@@ -124,6 +180,15 @@ export default function AddressPage() {
   }
 
   const { width, height} = useWindowSize()
+
+  const formatDeliveryDate = (date: Date) => {
+    return date.getDate() + (date.getDate() === 1 ? 'st' : date.getDate() === 2 ? 'nd' : date.getDate() === 3 ? 'rd' : 'th') + ' ' + 
+      date.toLocaleString('default', { month: 'short' })
+  }
+  const Day = 1*24*60*60*1000
+
+  const FastestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (7 * Day)));
+  const SlowestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (14 * Day)));
 
   if (orderPlaced) {
     return (
@@ -292,40 +357,43 @@ export default function AddressPage() {
 
           {/* Order Summary */}
           <div className="md:col-span-1">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 w-[500px]">
               <h2 className="text-2xl font-serif mb-6">Delivery estimates</h2>
 
               <div className="border-b border-gray-200 pb-4">
-                {items.map((item) => (
-                  <div key={item.product.id} className="flex items-center py-2">
-                    <div className="w-12 h-12 relative mr-4">
-                      <Image
-                        src={item.product.image || "/placeholder.svg?height=48&width=48&query=jewelry"}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover rounded-md"
-                      />
-                    </div>
-                    <p className="text-gray-700">Estimated Delivery by 10th May 2025</p>
-                  </div>
-                ))}
+          {cartItems.map((item) => (
+            <div key={item.productId} className="flex items-center py-2">
+              <div className="w-12 h-12 relative mr-4">
+                <Image
+                  src={item.image}
+                  alt={item.name}
+                  fill
+                  className="object-cover rounded-md"
+                />
               </div>
+              <div className="flex-1">
+                <p className="font-medium text-sm">{item.name}</p>
+                <p className="text-gray-600 text-sm">Qty: {item.quantity}</p>
+                <p className="text-gray-700 text-sm">
+                  Estimated Delivery by <strong>{FastestDeliveryDate}</strong> to <strong>{SlowestDeliveryDate}</strong>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
 
               <div className="py-4 space-y-3 border-b border-gray-200">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>{formatPrice(getSubtotal())}</span>
+                  <span>{formatPrice(cartTotals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax</span>
-                  <span>+{formatPrice(getTax())}</span>
+                  <span>+{formatPrice(cartTotals.tax)}</span>
                 </div>
-                {getDiscount() > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Discount</span>
-                    <span>-{formatPrice(getDiscount())}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span>Delivery charges</span>
                   <span className="text-green-600">Free</span>
@@ -335,14 +403,14 @@ export default function AddressPage() {
               <div className="pt-4 mb-6">
                 <div className="flex justify-between text-xl font-medium">
                   <span>Total</span>
-                  <span>{formatPrice(getTotal())}</span>
+                  <span>{formatPrice(cartTotals.total)}</span>
                 </div>
               </div>
 
               <button
                 className="w-full py-3 bg-black text-white rounded-md font-medium"
                 onClick={handleContinue}
-                disabled={!selectedAddressId}
+                disabled={!selectedAddressId || cartItems.length === 0}
               >
                 Continue
               </button>
