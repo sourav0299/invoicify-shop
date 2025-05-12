@@ -1,6 +1,6 @@
 
 "use client"
-import Navbar from "@/components/navbar"
+
 import ProductCard from "@/components/product-card"
 import { useEffect, useState } from "react"
 
