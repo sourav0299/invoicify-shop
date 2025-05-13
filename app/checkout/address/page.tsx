@@ -5,13 +5,19 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ShoppingCart, Home, Building2 } from "lucide-react"
+import { ShoppingCart, Home, Building2, Key, Currency } from "lucide-react"
 import { useShoppingCartStore, useAddressStore, type Address } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
 import toast from "react-hot-toast"
 import Confetti from "react-confetti"
 import { useWindowSize } from "react-use"
+
+declare global{
+  interface Window{
+    Razorpay: any;
+  }
+}
 
 
 interface UserResponse {
@@ -142,15 +148,77 @@ export default function AddressPage() {
     }).format(price)
   }
 
-  const handleContinue = () => {
-    if (selectedAddressId) {
-     
-      setOrderPlaced(true)
-      setPop(true)
-      setTimeout(() => {
-        clearCart()
-        router.push("/shop")
-      }, 9000)
+  const handleContinue = async(amount: number) => {
+    try{
+      if(!user?.email){
+        toast.error('Please Login to continue')
+        router.push('/login')
+        return
+      }
+
+      const amountInPaise = Math.round(amount)
+
+      const orderResponse = await fetch('/api/create-razorpay-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({amount: amountInPaise})
+      });
+
+      const orderData = await orderResponse.json();
+
+      if(!orderResponse.ok){
+        throw new Error(orderData.error || 'Failed to create order');
+      }
+
+      const razorpay = new window.Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        order_id: orderData.orderId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'Shop.Invoicify',
+        description: `Payment for ${amount}`,
+        image: '/logo.png',
+        handler: async function (response: any){
+          const orderResponse = await fetch('/api/create-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userEmail: user?.email,
+              amount,
+              paymentId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id,
+              signature: response.razorpay_signature,
+            })
+          });
+          const orderData = await orderResponse.json()
+
+          if(!orderResponse.ok){
+            throw new Error("Payment Failed", orderData.error)
+          }
+        },
+        prefil: {
+          email: user?.email,
+          name: user.displayName
+        },
+        theme: {
+          color: '#1eb386'
+        },
+      })
+      razorpay.open()
+      toast.success("Order Executed Successfully")
+          setOrderPlaced(true)
+          setPop(true)
+          setTimeout(() => {
+            clearCart()
+          router.push("/shop")
+          }, 9000)
+    }catch(error){
+      console.error("Something went wrong", error)
+      toast.error("Try again later")
     }
   }
 
@@ -409,7 +477,7 @@ export default function AddressPage() {
 
               <button
                 className="w-full py-3 bg-black text-white rounded-md font-medium"
-                onClick={handleContinue}
+                onClick={() => handleContinue((cartTotals.total)*100)}
                 disabled={!selectedAddressId || cartItems.length === 0}
               >
                 Continue
