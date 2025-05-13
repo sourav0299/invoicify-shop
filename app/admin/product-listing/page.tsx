@@ -8,16 +8,23 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Trash2, Copy, RotateCw, Upload } from "lucide-react"
+import toast from "react-hot-toast"
 
 interface ProductFormData {
   name: string
-  price: string
-  discount: string
-  modelNumber: string
+  price: number
+  image: string
+  imageFile: File | null
+  isFavorite: boolean
   category: string
-  gender: string
+  material: string
+  occasion: string
+  modelNumber: string
   description: string
-  images: string[]
+  weight: string
+  shopFor: string
+  reviews: number
+  rating: number
 }
 
 export default function ProductListing() {
@@ -25,13 +32,19 @@ export default function ProductListing() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
-    price: "",
-    discount: "",
-    modelNumber: "",
+    price: 0,
+    image: "",
+    isFavorite: false,
     category: "",
-    gender: "",
+    material: "",
+    occasion: "",
+    modelNumber: "",
     description: "",
-    images: [],
+    weight: "",
+    shopFor: "",
+    reviews: 0,
+    rating: 0,
+    imageFile: null,
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -49,42 +62,44 @@ export default function ProductListing() {
     }))
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    const newImages = [...formData.images]
-    for (let i = 0; i < files.length; i++) {
-      if (newImages.length < 5) {
-        const imageUrl = URL.createObjectURL(files[i])
-        newImages.push(imageUrl)
-      }
+  const handleImageUpload = async(e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if(!file)return ;
+    if(file.size > 99*1024*1024){
+      toast.error("File size must be less than 99MB")
+      return;
     }
-
-    setFormData((prev) => ({
-      ...prev,
-      images: newImages,
-    }))
+    if(!file.type.startsWith('image/')){
+      toast.error('Only image file are allowed')
+    }
+    try{
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/products',{
+        method: 'POST',
+        body: formData,
+      });
+      if(!response.ok){
+        throw new Error('Upload failed');
+      }
+      const result = await response.json();
+      setFormData(prev => ({
+        ...prev,
+        image: result.secure_url,
+        imageFile: file
+      }));
+    }catch(error){
+      console.error('Error uploading image:', error)
+      toast.error('Failed to upload Image')
+    }
   }
 
   const handleRemoveImage = (index: number) => {
-    const newImages = [...formData.images]
-    newImages.splice(index, 1)
-    setFormData((prev) => ({
-      ...prev,
-      images: newImages,
-    }))
+    toast.error("Try Again Later")
   }
 
   const handleDuplicateImage = (index: number) => {
-    if (formData.images.length < 5) {
-      const newImages = [...formData.images]
-      newImages.push(formData.images[index])
-      setFormData((prev) => ({
-        ...prev,
-        images: newImages,
-      }))
-    }
+    toast.error("Try Again Later")
   }
 
   const handleClickUpload = () => {
@@ -93,10 +108,45 @@ export default function ProductListing() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
-    // Submit logic here
-    console.log(formData)
+    try{
+      const productData = {
+        ...formData,
+        imageFile: undefined
+      };
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(productData),
+      });
+      if(response.ok){
+        toast.success("Product added successfully!");
+        setFormData({
+          name: "",
+          price: 0,
+          image: "",
+          isFavorite: false,
+          category: "",
+          material: "",
+          occasion: "",
+          modelNumber: "",
+          description: "",
+          weight: "",
+          shopFor: "",
+          reviews: 0,
+          rating: 0,
+          imageFile: null,
+        })
+      }else{
+        throw new Error("Failed to add product")
+      }
+    }catch(error){
+      console.log("Error:", error);
+      toast.error("Failed to add product");
+    }
   }
 
   return (
@@ -117,19 +167,20 @@ export default function ProductListing() {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Enter Text"
+                placeholder="eg: Ring"
                 className="w-full border rounded"
+                required
               />
             </div>
             <div>
-              <label className="block mb-2 text-sm">Enter Model number</label>
+              <label className="block mb-2 text-sm">Enter Price of product</label>
               <Input
-                type="text"
-                name="modelNumber"
-                value={formData.modelNumber}
+                type="number"
+                name="price"
+                value={formData.price}
                 onChange={handleChange}
-                placeholder="Enter Text"
                 className="w-full border rounded"
+                required
               />
             </div>
           </div>
@@ -170,24 +221,51 @@ export default function ProductListing() {
 
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block mb-2 text-sm">Price</label>
+              <label className="block mb-2 text-sm">Enter Product Material</label>
               <Input
                 type="text"
-                name="price"
-                value={formData.price}
+                name="material"
+                value={formData.material}
                 onChange={handleChange}
-                placeholder="Enter Price"
+                placeholder="eg: Cotton"
+                className="w-full border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-2 text-sm">Occasion</label>
+              <Input
+                type="text"
+                name="occasion"
+                value={formData.occasion}
+                onChange={handleChange}
+                placeholder="eg: wedding"
+                className="w-full border rounded"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block mb-2 text-sm">Weight of Product</label>
+              <Input
+                type="text"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                placeholder="Eg: 200g"
                 className="w-full border rounded"
               />
             </div>
             <div>
-              <label className="block mb-2 text-sm">Discount</label>
+              <label className="block mb-2 text-sm">Product Model Number</label>
               <Input
                 type="text"
-                name="discount"
-                value={formData.discount}
+                name="modelNumber"
+                value={formData.modelNumber}
                 onChange={handleChange}
-                placeholder="Enter Discount"
+                placeholder="Eg: MODEL001"
                 className="w-full border rounded"
               />
             </div>
@@ -212,35 +290,16 @@ export default function ProductListing() {
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-6">Add Product images</h2>
           <div className="grid grid-cols-3 gap-4">
-            {formData.images.map((image, index) => (
-              <div key={index} className="relative border rounded overflow-hidden h-48">
+            {formData.image &&  (
+              <div className="relative border rounded overflow-hidden h-48">
                 <img
-                  src={image || "/placeholder.svg"}
-                  alt={`Product ${index + 1}`}
+                  src={formData.image || "/placeholder.svg"}
+                  alt={`Product ${formData.name}`}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute right-2 top-2 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(index)}
-                    className="bg-white p-1.5 rounded-md shadow-md"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDuplicateImage(index)}
-                    className="bg-white p-1.5 rounded-md shadow-md"
-                  >
-                    <Copy size={16} />
-                  </button>
-                  <button type="button" className="bg-white p-1.5 rounded-md shadow-md">
-                    <RotateCw size={16} />
-                  </button>
-                </div>
               </div>
-            ))}
-            {formData.images.length < 5 && (
+            )}
+            {formData.image.length < 5 && (
               <div
                 onClick={handleClickUpload}
                 className="border-2 border-dashed rounded-md h-48 flex flex-col items-center justify-center cursor-pointer"

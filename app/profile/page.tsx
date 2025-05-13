@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 interface UserAddress {
   name?: string;
@@ -39,7 +40,7 @@ interface UserProfile {
   name: string;
   email: string;
   phone?: string;
-  address?: UserAddress;
+  address?: UserAddress[];
   isComplete?: boolean;
 }
 
@@ -53,13 +54,8 @@ export default function ProfilePage() {
     name: "",
     phone: "",
     email: user?.email,
-    address: {
-      name: "",
-      street: "",
-      city: "",
-      state: "",
-      zipCode: "",
-    },
+    address: [],
+    isComplete: false
   });
 
   const fetchUserProfile = async (email: string) => {
@@ -67,18 +63,11 @@ export default function ProfilePage() {
       const response = await fetch(`/api/users/${email}`);
       if (!response.ok) throw new Error("Failed to fetch profile");
       const data = await response.json();
-      console.log(data);
       setFormData({
         name: data.name || "",
         phone: data.phone || "",
         email: data.email || "",
-        address: data.address || {
-          name: data.name,
-          street: "",
-          city: "",
-          state: "",
-          zipCode: "",
-        },
+        address: data.address || [],
       });
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -104,9 +93,8 @@ export default function ProfilePage() {
 
       if (!response.ok) throw new Error("Failed to update profile");
 
-      // Refresh the profile data
       await fetchUserProfile(user.email);
-      // Close the dialog
+      toast.success("Default address Changed Successfully")
       setIsOpen(false)
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -258,14 +246,14 @@ export default function ProfilePage() {
                               </Label>
                               <Input
                                 id="street"
-                                value={formData.address?.street}
+                                value={formData.address?.[0]?.street}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    address: {
-                                      ...formData.address,
+                                    address: [{
+                                      ...formData.address?.[0],
                                       street: e.target.value,
-                                    },
+                                    }],
                                   })
                                 }
                                 placeholder="143 Avenue street park"
@@ -279,14 +267,14 @@ export default function ProfilePage() {
                               </Label>
                               <Input
                                 id="city"
-                                value={formData.address?.city}
+                                value={formData.address?.[0]?.city}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    address: {
-                                      ...formData.address,
+                                    address: [{
+                                      ...formData.address?.[0],
                                       city: e.target.value,
-                                    },
+                                    }],
                                   })
                                 }
                                 placeholder="Albuquerque"
@@ -300,14 +288,14 @@ export default function ProfilePage() {
                               </Label>
                               <Input
                                 id="state"
-                                value={formData.address?.state}
+                                value={formData.address?.[0]?.state}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    address: {
-                                      ...formData.address,
+                                    address: [{
+                                      ...formData.address?.[0],
                                       state: e.target.value,
-                                    },
+                                    }],
                                   })
                                 }
                                 placeholder="New Mexico"
@@ -321,14 +309,14 @@ export default function ProfilePage() {
                               </Label>
                               <Input
                                 id="zipcode"
-                                value={formData.address?.zipCode}
+                                value={formData.address?.[0]?.zipCode}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    address: {
-                                      ...formData.address,
+                                    address: [{
+                                      ...formData.address?.[0],
                                       zipCode: e.target.value,
-                                    },
+                                    }],
                                   })
                                 }
                                 placeholder="87101"
@@ -362,18 +350,27 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-gray-200">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-medium">Address</h2>
-                  </div>
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-xl font-medium">Addresses</h2>
+    </div>
 
-                  <div>
-                    <p className="font-medium">{user?.displayName || formData.name}</p>
-                    <p className="text-gray-600 mt-1">
-                      {user?.address || `${formData.address?.street} ${formData.address?.city} ${formData.address?.state} ${formData.address?.zipCode}`}
-                    </p>
-                    <p className="text-gray-600">{user?.phoneNumber || formData.phone}</p>
-                  </div>
-                </div>
+    {(formData.address || []).length > 0 ? (
+      <div className="space-y-4">
+        {formData.address?.map((addr) => (
+          <div key={addr.name} className="">
+            <p className="font-medium">{addr.name || 'Default Address'}</p>
+            <p className="text-gray-600 mt-1">
+              {addr.street}, {addr.city}, {addr.state} {addr.zipCode}
+            </p>
+            {formData.phone && <p className="text-gray-600">{formData.phone}</p>}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-gray-500">No addresses added yet.</p>
+    )}
+  </div>
+
               </div>
             ) : (
               <div className="bg-white border border-gray-200 rounded-lg p-6">

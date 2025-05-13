@@ -167,6 +167,14 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const handlePincode = () => {
+    if(pincode.length === 6){
+      setPincodeChecked(true)
+    }else{
+      toast.error("Invalid Pincode")
+    }
+  }
+
   const handleToggleFavorite = async () => {
     try {
       const response = await fetch(`/api/products/${params.id}`, {
@@ -251,27 +259,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               <span className="ml-2 text-[#1a1a1a]">({product.reviews} Reviews)</span>
             </div>
 
-            <div className="space-y-2">
-              <p className="font-medium text-[#1a1a1a]">Quantity</p>
-              <div className="flex items-center">
-                <button
-                  className="w-10 h-10 flex items-center justify-center border border-[#1a1a1a] rounded-l-md"
-                  onClick={() => decrement(params.id)}
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <div className="w-12 h-10 flex items-center justify-center border-t border-b border-[#1a1a1a]">
-                  {quantity}
-                </div>
-                <button
-                  className="w-10 h-10 flex items-center justify-center border border-[#1a1a1a] rounded-r-md"
-                  onClick={() => increment(params.id)}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
             <div className="flex gap-4">
               <button 
               onClick={handleWishlistButton}
@@ -295,7 +282,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   placeholder="Enter Pincode"
                   className="flex-1 px-4 py-2 border border-[#cccccc] rounded-l-md focus:outline-none"
                 />
-                <button onClick={() => {if(pincode.length === 6) setPincodeChecked(true)}} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
+                <button onClick={() => handlePincode()} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
               </div>
               { isPincodeChecked ? (
                 <p className="text-sm text-red-400">Free Delivery if ordered today Get it by <strong>{FastestDeliveryDate}</strong> to <strong>{SlowestDeliveryDate}</strong></p>
