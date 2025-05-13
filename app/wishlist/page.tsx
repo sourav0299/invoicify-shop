@@ -1,40 +1,64 @@
 "use client"
+
 import Navbar from "@/components/navbar";
 import ProductCard from "@/components/product-card";
-import { products } from "@/data/product"
 import { useEffect, useState } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
-interface Product {
-  id: string
+interface WishlistProduct {
+  productId: string
   name: string
   price: number
   image: string
-  isFavorite: boolean
+  addedAt: string
 }
 
-export default function wishlist(){
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+export default function Wishlist() {
+  const router = useRouter();
+  const auth = getAuth();
+  const [user, setUser] = useState<any>(null);
+  const [products, setProducts] = useState<WishlistProduct[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchFavoriteProducts = async () => {
-      try {
-        const response = await fetch('/api/products')
-        if (!response.ok) {
-          throw new Error('Failed to fetch products')
-        }
-        const data = await response.json()
-        const favoriteProducts = data.filter((product: Product) => product.isFavorite)
-        setProducts(favoriteProducts)
-      } catch (error) {
-        console.error('Error fetching favorite products:', error)
-      } finally {
-        setLoading(false)
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      if (!user) {
+        router.push('/login');
+        toast.error('Please login to view wishlist');
       }
-    }
+    });
+    return () => unsubscribe();
+  }, [router]);
 
-    fetchFavoriteProducts()
-  }, [])
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (!user?.email) return;
+
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/wishlist?email=${user.email}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch wishlist');
+        }
+
+        const data = await response.json();
+        setProducts(data);
+      } catch (error) {
+        console.error('Error fetching wishlist:', error);
+        toast.error('Failed to fetch wishlist');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.email) {
+      fetchWishlist();
+    }
+  }, [user?.email]);
 
     return (
         <div className="bg-white min-h-screen">
@@ -193,21 +217,38 @@ export default function wishlist(){
         
                  
                   <div className="w-[800px] h-[1564px]">
-                    <div className="grid grid-cols-2 gap-[36px]">
-                      {products.map((product) => (
-                        <ProductCard
-                          key={product.id}
-                          id={product.id}
-                          name={product.name}
-                          price={product.price}
-                          image={product.image}
-                          isFavorite={product.isFavorite}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
+            {loading ? (
+              <div className="flex justify-center items-center h-[400px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a1a1a]"></div>
               </div>
-            </div>
-    )
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-2 gap-[36px]">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.productId}
+                    id={product.productId}
+                    name={product.name}
+                    price={product.price}
+                    image={product.image}
+                    isFavorite={true}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[400px]">
+                <h3 className="text-2xl font-medium mb-4">Your wishlist is empty</h3>
+                <p className="text-gray-500 mb-8">Start adding items to your wishlist!</p>
+                <button 
+                  onClick={() => router.push('/shop')}
+                  className="px-6 py-3 bg-[#1a1a1a] text-white rounded-md hover:bg-black transition-colors"
+                >
+                  Browse Products
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Heart } from 'lucide-react'
 import toast from "react-hot-toast"
+import { auth } from "@/lib/firebase"
+import { useRouter } from "next/navigation"
 
 interface ProductCardProps {
   id: string
@@ -25,6 +27,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [favorite, setFavorite] = useState(isFavorite)
   const [isUpdating, setIsUpdating] = useState(false)
+  const router = useRouter()
   
   const formattedPrice = new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -35,20 +38,36 @@ export default function ProductCard({
   const handleToggleFavorite = async () => {
     if (isUpdating) return
     
+    const user = auth.currentUser
+    if (!user?.email) {
+      toast.error("Please login to add to wishlist")
+      router.push("/login")
+      return
+    }
+
     setIsUpdating(true)
     const newFavoriteStatus = !favorite
 
     try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'PUT',
+      const response = await fetch('/api/wishlist', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ isFavorite: newFavoriteStatus }),
+        body: JSON.stringify({
+          email: user.email,
+          action: newFavoriteStatus ? 'add' : 'remove',
+          product: {
+            productId: id,
+            name,
+            price,
+            image
+          }
+        }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update favorite status')
+        throw new Error('Failed to update wishlist')
       }
 
       setFavorite(newFavoriteStatus)
@@ -63,13 +82,34 @@ export default function ProductCard({
           : 'Removed from Wishlist'
       )
     } catch (error) {
-      console.error('Error updating favorite status:', error)
-      toast.error('Failed to update favorite status')
+      console.error('Error updating wishlist:', error)
+      toast.error('Failed to update wishlist')
       setFavorite(!newFavoriteStatus)
     } finally {
       setIsUpdating(false)
     }
   }
+
+  // Check if product is in wishlist on component mount
+  useEffect(() => {
+    const checkWishlist = async () => {
+      const user = auth.currentUser
+      if (!user?.email) return
+
+      try {
+        const response = await fetch(`/api/wishlist?email=${user.email}`)
+        if (!response.ok) throw new Error('Failed to fetch wishlist')
+
+        const products = await response.json()
+        const isInWishlist = products.some((p: any) => p.productId === id)
+        setFavorite(isInWishlist)
+      } catch (error) {
+        console.error('Error checking wishlist:', error)
+      }
+    }
+
+    checkWishlist()
+  }, [auth.currentUser, id])
 
   return (
     <div className="group relative w-[384px] h-[288px] flex flex-col">

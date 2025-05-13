@@ -1,175 +1,186 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useEffect, useState } from "react"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { ShoppingCart, Home, Building2, Key, Currency } from "lucide-react"
-import { useShoppingCartStore, useAddressStore, type Address } from "@/lib/store"
-import Navbar from "@/components/navbar"
-import { getAuth, onAuthStateChanged } from "firebase/auth"
-import toast from "react-hot-toast"
-import Confetti from "react-confetti"
-import { useWindowSize } from "react-use"
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { ShoppingCart, Home, Building2, Key, Currency } from "lucide-react";
+import {
+  useShoppingCartStore,
+  useAddressStore,
+  type Address,
+} from "@/lib/store";
+import Navbar from "@/components/navbar";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import toast from "react-hot-toast";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
-declare global{
-  interface Window{
+declare global {
+  interface Window {
     Razorpay: any;
   }
 }
 
-
 interface UserResponse {
-  _id: string
-  email: string
-  name: string
-  phone: string
+  _id: string;
+  email: string;
+  name: string;
+  phone: string;
   address: Array<{
-    _id: string
-    name: string
-    street: string
-    city: string
-    state: string
-    zipCode: string
-    isDefault: boolean
-  }>
-  isComplete: boolean
-  createdAt: string
+    _id: string;
+    name: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    isDefault: boolean;
+  }>;
+  isComplete: boolean;
+  createdAt: string;
 }
 
 interface CartItem {
-  productId: string
-  name: string
-  price: number
-  image: string
-  quantity: number
+  productId: string;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
 }
 
 interface CartTotals {
-  subtotal: number
-  tax: number
-  discount: number
-  total: number
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
 }
 
 export default function AddressPage() {
-  const router = useRouter()
-  const auth = getAuth()
-  const user = auth.currentUser
-  const { items, getSubtotal, getTax, getDiscount, getTotal, clearCart } = useShoppingCartStore()
-  const [addresses, setAddresses] = useState<UserResponse['address']>([])
-  const [selectedAddressId, setSelectedAddressId] = useState<string>('')
+  const router = useRouter();
+  const auth = getAuth();
+  const user = auth.currentUser;
+  const { items, getSubtotal, getTax, getDiscount, getTotal, clearCart } =
+    useShoppingCartStore();
+  const [addresses, setAddresses] = useState<UserResponse["address"]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   // const { addresses, selectedAddressId, selectAddress, removeAddress } = useAddressStore()
-  const [showAddressForm, setShowAddressForm] = useState(false)
-  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
-  const [orderPlaced, setOrderPlaced] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [pop, setPop] = useState(false)
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [pop, setPop] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartTotals, setCartTotals] = useState<CartTotals>({
     subtotal: 0,
     tax: 0,
     discount: 0,
-    total: 0
-  })
+    total: 0,
+  });
 
   const calculateTotals = (items: CartItem[]) => {
-    const subtotal = items.reduce((sum, item) => 
-      sum + (item.price * item.quantity), 0)
-    const tax = Math.round(subtotal * 0.18)
-    const discount = 0
-    const total = subtotal + tax - discount
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    const tax = Math.round(subtotal * 0.18);
+    const discount = 0;
+    const total = subtotal + tax - discount;
 
-    return { subtotal, tax, discount, total }
-  }
+    return { subtotal, tax, discount, total };
+  };
 
   const fetchCartItems = async (email: string) => {
     try {
-      setLoading(true)
-      const response = await fetch(`/api/cart?email=${email}`)
-      if (!response.ok) throw new Error("Failed to fetch cart")
-      
-      const items: CartItem[] = await response.json()
+      setLoading(true);
+      const response = await fetch(`/api/cart?email=${email}`);
+      if (!response.ok) throw new Error("Failed to fetch cart");
+
+      const items: CartItem[] = await response.json();
       if (!items.length) {
-        router.push('/shop')
-        toast.error("Your cart is empty")
-        return
+        router.push("/shop");
+        toast.error("Your cart is empty");
+        return;
       }
 
-      setCartItems(items)
-      setCartTotals(calculateTotals(items))
+      setCartItems(items);
+      setCartTotals(calculateTotals(items));
     } catch (error) {
-      console.error("Error fetching cart:", error)
-      toast.error("Failed to fetch cart items")
+      console.error("Error fetching cart:", error);
+      toast.error("Failed to fetch cart items");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const fetchAddresses = async (email : string ) => {
-    try{
-      const response = await fetch(`/api/users/${email}`)
-      if(!response.ok){
-        throw new Error("Failed to fetch addresses")
+  const fetchAddresses = async (email: string) => {
+    try {
+      const response = await fetch(`/api/users/${email}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch addresses");
       }
 
-      const data : UserResponse = await response.json()
-      if(data.address?.length){
-        setAddresses(data.address)
-        setSelectedAddressId(data.address[0]._id)
+      const data: UserResponse = await response.json();
+      if (data.address?.length) {
+        setAddresses(data.address);
+        setSelectedAddressId(data.address[0]._id);
       }
-    }catch(error){
+    } catch (error) {
       console.error("Error in fetching addresses", error);
-      toast.error("Failed to fetch")
-    }finally{
-      setLoading(false)
+      toast.error("Failed to fetch");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user?.email) {
-        fetchAddresses(user.email)
-        fetchCartItems(user.email)
+        fetchAddresses(user.email);
+        fetchCartItems(user.email);
       } else {
-        router.push('/login')
-      }})
+        router.push("/login");
+      }
+    });
 
-      return () => unsubscribe()
-  }, [auth, router])
+    return () => unsubscribe();
+  }, [auth, router]);
 
-  
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0,
-    }).format(price)
-  }
+    }).format(price);
+  };
 
-  const handleContinue = async(amount: number) => {
-    try{
-      if(!user?.email){
-        toast.error('Please Login to continue')
-        router.push('/login')
-        return
+  const handleContinue = async (amount: number) => {
+    try {
+      if (!user?.email) {
+        toast.error("Please Login to continue");
+        router.push("/login");
+        return;
       }
 
-      const amountInPaise = Math.round(amount)
+      const amountInPaise = Math.round(amount);
 
-      const orderResponse = await fetch('/api/create-razorpay-order', {
-        method: 'POST',
+      if (amountInPaise < 50000) { // ₹500 = 50000 paise
+        toast.error("Minimum order amount should be ₹500");
+        return;
+      }
+
+      const orderResponse = await fetch("/api/create-razorpay-order", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({amount: amountInPaise})
+        body: JSON.stringify({ amount: amountInPaise }),
       });
 
       const orderData = await orderResponse.json();
 
-      if(!orderResponse.ok){
-        throw new Error(orderData.error || 'Failed to create order');
+      if (!orderResponse.ok) {
+        throw new Error(orderData.error || "Failed to create order");
       }
 
       const razorpay = new window.Razorpay({
@@ -177,14 +188,26 @@ export default function AddressPage() {
         order_id: orderData.orderId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'Shop.Invoicify',
-        description: `Payment for ${amount}`,
-        image: '/logo.png',
-        handler: async function (response: any){
-          const orderResponse = await fetch('/api/create-order', {
-            method: 'POST',
+        name: "Shop.Invoicify",
+        description: `Payment for ${orderData.orderId}`,
+        image: "/logo.png",
+        prefill: {
+          name: user.displayName || "",
+          email: user.email,
+        },
+        notes: {
+          address: selectedAddressId
+        },
+        handler: async function (response: any) {
+          try{
+          const selectedAddress = addresses.find(addr => addr._id === selectedAddressId);
+          if (!selectedAddress) {
+            throw new Error('Selected address not found');
+          }
+          const orderResponse = await fetch("/api/orders", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               userEmail: user?.email,
@@ -192,71 +215,93 @@ export default function AddressPage() {
               paymentId: response.razorpay_payment_id,
               orderId: response.razorpay_order_id,
               signature: response.razorpay_signature,
-            })
+              selectedAddress,
+              items: cartItems,
+            }),
           });
-          const orderData = await orderResponse.json()
+          const orderData = await orderResponse.json();
 
-          if(!orderResponse.ok){
-            throw new Error("Payment Failed", orderData.error)
+          if (!orderResponse.ok) {
+            throw new Error("Payment Failed", orderData.error);
           }
-        },
-        prefil: {
-          email: user?.email,
-          name: user.displayName
-        },
-        theme: {
-          color: '#1eb386'
-        },
-      })
-      razorpay.open()
-      toast.success("Order Executed Successfully")
-          setOrderPlaced(true)
-          setPop(true)
+          setOrderPlaced(true);
+          toast.success("Order Executed Successfully");
+          setPop(true);
           setTimeout(() => {
-            clearCart()
-          router.push("/shop")
-          }, 9000)
-    }catch(error){
-      console.error("Something went wrong", error)
-      toast.error("Try again later")
-    }
-  }
-
-  const handleRemoveAddress = async(address: any) => {
-    const email = user?.email
-    if(!email) return
-    try{
-      const response = await fetch(`/api/users/${email}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          address: addresses.filter(a => a._id !== address._id)
-        })
-      })
-      if(response.ok){
-        setAddresses(prev => prev.filter(a => a._id !== address._id))
+            clearCart();
+            router.push("/profile");
+          }, 9000);
+        }catch(error){
+          toast.error("Try again Later")
+        }
+      },
+      theme: {
+        color: "#108a07"
       }
-      toast.success("Address Removed")
-    }catch(error){
-      console.error('Error removing address: ', error)
-    }
+    });
+
+    razorpay.on('payment.failed', function(resp: any) {
+      setLoading(false);
+      toast.error(resp.error.description || "Payment failed");
+    });
+
+    razorpay.open();
+  } catch (error) {
+    console.error("Payment initialization failed:", error);
+    toast.error("Failed to process payment");
+    setLoading(false);
   }
+};
+
+  const handleRemoveAddress = async (address: any) => {
+    const email = user?.email;
+    if (!email) return;
+    try {
+      const response = await fetch(`/api/users/${email}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: addresses.filter((a) => a._id !== address._id),
+        }),
+      });
+      if (response.ok) {
+        setAddresses((prev) => prev.filter((a) => a._id !== address._id));
+      }
+      toast.success("Address Removed");
+    } catch (error) {
+      console.error("Error removing address: ", error);
+    }
+  };
 
   const handleEdit = (id: string) => {
-    setEditingAddressId(id)
-    setShowAddressForm(true)
-  }
+    setEditingAddressId(id);
+    setShowAddressForm(true);
+  };
 
-  const { width, height} = useWindowSize()
+  const { width, height } = useWindowSize();
 
   const formatDeliveryDate = (date: Date) => {
-    return date.getDate() + (date.getDate() === 1 ? 'st' : date.getDate() === 2 ? 'nd' : date.getDate() === 3 ? 'rd' : 'th') + ' ' + 
-      date.toLocaleString('default', { month: 'short' })
-  }
-  const Day = 1*24*60*60*1000
+    return (
+      date.getDate() +
+      (date.getDate() === 1
+        ? "st"
+        : date.getDate() === 2
+        ? "nd"
+        : date.getDate() === 3
+        ? "rd"
+        : "th") +
+      " " +
+      date.toLocaleString("default", { month: "short" })
+    );
+  };
+  const Day = 1 * 24 * 60 * 60 * 1000;
 
-  const FastestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (7 * Day)));
-  const SlowestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (14 * Day)));
+  const FastestDeliveryDate = formatDeliveryDate(
+    new Date(Date.now() + 7 * Day)
+  );
+  const SlowestDeliveryDate = formatDeliveryDate(
+    new Date(Date.now() + 14 * Day)
+  );
 
   if (orderPlaced) {
     return (
@@ -283,11 +328,13 @@ export default function AddressPage() {
           </div>
           <h1 className="text-3xl font-serif mb-4">Order Confirmed!</h1>
           <p className="text-lg mb-2">Thank you for your purchase.</p>
-          <p className="text-gray-600 mb-8">Your order has been placed and is being processed.</p>
+          <p className="text-gray-600 mb-8">
+            Your order has been placed and is being processed.
+          </p>
           <p className="text-gray-600">Redirecting to shop page...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -354,8 +401,8 @@ export default function AddressPage() {
                 <button
                   className="px-4 py-2 border border-gray-300 rounded-md text-[#1a1a1a] hover:bg-gray-50"
                   onClick={() => {
-                    setEditingAddressId(null)
-                    setShowAddressForm(true)
+                    setEditingAddressId(null);
+                    setShowAddressForm(true);
                   }}
                 >
                   Add new address
@@ -368,14 +415,17 @@ export default function AddressPage() {
                   addresses={addresses}
                   onAddressUpdate={fetchAddresses}
                   onCancel={() => {
-                    setShowAddressForm(false)
-                    setEditingAddressId(null)
+                    setShowAddressForm(false);
+                    setEditingAddressId(null);
                   }}
                 />
               ) : (
                 <div className="space-y-6">
                   {addresses.map((address) => (
-                    <div key={address._id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                    <div
+                      key={address._id}
+                      className="border-b border-gray-200 pb-6 last:border-b-0"
+                    >
                       <div className="flex items-start">
                         <div className="flex items-center h-5 mt-1">
                           <input
@@ -388,12 +438,16 @@ export default function AddressPage() {
                           />
                         </div>
                         <div className="ml-3 text-sm">
-                          <label htmlFor={`address-${address._id}`} className="font-medium text-gray-900 text-lg">
-                            {address.name || 'Home'}
+                          <label
+                            htmlFor={`address-${address._id}`}
+                            className="font-medium text-gray-900 text-lg"
+                          >
+                            {address.name || "Home"}
                           </label>
                           <div className="mt-2 text-gray-700">
                             <p>
-                              {address.street} {address.city}, {address.state} {address.zipCode}
+                              {address.street} {address.city}, {address.state}{" "}
+                              {address.zipCode}
                             </p>
                           </div>
                           {selectedAddressId === address._id && (
@@ -421,37 +475,41 @@ export default function AddressPage() {
             </div>
           </div>
 
-          
-
           {/* Order Summary */}
           <div className="md:col-span-1">
             <div className="bg-white rounded-lg border border-gray-200 p-6 w-[500px]">
               <h2 className="text-2xl font-serif mb-6">Delivery estimates</h2>
 
               <div className="border-b border-gray-200 pb-4">
-          {cartItems.map((item) => (
-            <div key={item.productId} className="flex items-center py-2">
-              <div className="w-12 h-12 relative mr-4">
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  fill
-                  className="object-cover rounded-md"
-                />
+                {cartItems.map((item) => (
+                  <div key={item.productId} className="flex items-center py-2">
+                    <div className="w-12 h-12 relative mr-4">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover rounded-md"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{item.name}</p>
+                      <p className="text-gray-600 text-sm">
+                        Qty: {item.quantity}
+                      </p>
+                      <p className="text-gray-700 text-sm">
+                        Estimated Delivery by{" "}
+                        <strong>{FastestDeliveryDate}</strong> to{" "}
+                        <strong>{SlowestDeliveryDate}</strong>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">
+                        {formatPrice(item.price * item.quantity)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex-1">
-                <p className="font-medium text-sm">{item.name}</p>
-                <p className="text-gray-600 text-sm">Qty: {item.quantity}</p>
-                <p className="text-gray-700 text-sm">
-                  Estimated Delivery by <strong>{FastestDeliveryDate}</strong> to <strong>{SlowestDeliveryDate}</strong>
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
 
               <div className="py-4 space-y-3 border-b border-gray-200">
                 <div className="flex justify-between">
@@ -477,7 +535,7 @@ export default function AddressPage() {
 
               <button
                 className="w-full py-3 bg-black text-white rounded-md font-medium"
-                onClick={() => handleContinue((cartTotals.total)*100)}
+                onClick={() => handleContinue(cartTotals.total * 100)}
                 disabled={!selectedAddressId || cartItems.length === 0}
               >
                 Continue
@@ -487,91 +545,96 @@ export default function AddressPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 interface AddressFormProps {
-  editingAddressId: string | null
-  onCancel: () => void
-  addresses: UserResponse['address']
-  onAddressUpdate: (email: string) => Promise<void>
+  editingAddressId: string | null;
+  onCancel: () => void;
+  addresses: UserResponse["address"];
+  onAddressUpdate: (email: string) => Promise<void>;
 }
 
-function AddressForm({ editingAddressId, onCancel, addresses, onAddressUpdate }: AddressFormProps) {
-  const auth = getAuth()
-  const editingAddress = editingAddressId 
-    ? addresses.find(addr => addr._id === editingAddressId) 
-    : null
+function AddressForm({
+  editingAddressId,
+  onCancel,
+  addresses,
+  onAddressUpdate,
+}: AddressFormProps) {
+  const auth = getAuth();
+  const editingAddress = editingAddressId
+    ? addresses.find((addr) => addr._id === editingAddressId)
+    : null;
 
   const [formData, setFormData] = useState({
-    name: editingAddress?.name || 'Home',
-    street: editingAddress?.street || '',
-    city: editingAddress?.city || '',
-    state: editingAddress?.state || '',
-    zipCode: editingAddress?.zipCode || '',
-    isDefault: editingAddress?.isDefault || false
-  })
+    name: editingAddress?.name || "Home",
+    street: editingAddress?.street || "",
+    city: editingAddress?.city || "",
+    state: editingAddress?.state || "",
+    zipCode: editingAddress?.zipCode || "",
+    isDefault: editingAddress?.isDefault || false,
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!auth.currentUser?.email) return
+    e.preventDefault();
+    if (!auth.currentUser?.email) return;
 
     try {
-
-      const userResponse = await fetch(`/api/users/${auth.currentUser.email}`)
-      const userData = await userResponse.json()
+      const userResponse = await fetch(`/api/users/${auth.currentUser.email}`);
+      const userData = await userResponse.json();
 
       const newAddress = {
         ...formData,
-        name: formData.name.trim() || 'Home',
+        name: formData.name.trim() || "Home",
         _id: editingAddressId || Date.now().toString(),
-        isDefault: false
-      }
+        isDefault: false,
+      };
 
       const updatedAddresses = editingAddressId
-        ? addresses.map(addr => 
-            addr._id === editingAddressId 
-              ? newAddress
-              : addr
+        ? addresses.map((addr) =>
+            addr._id === editingAddressId ? newAddress : addr
           )
-        : [...addresses, newAddress]
+        : [...addresses, newAddress];
 
       const response = await fetch(`/api/users/${auth.currentUser.email}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name: userData.name,
           phone: userData.phone,
           address: updatedAddresses,
-          isComplete: userData.isComplete
+          isComplete: userData.isComplete,
         }),
-      })
+      });
 
-      if (!response.ok){
-        const error = await response.json()
-        throw new Error('Failed to save address', error.error)
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error("Failed to save address", error.error);
       }
 
-      await onAddressUpdate(auth.currentUser.email)
-      onCancel()
-      toast.success(editingAddressId ? 'Address updated' : 'Address added')
+      await onAddressUpdate(auth.currentUser.email);
+      onCancel();
+      toast.success(editingAddressId ? "Address updated" : "Address added");
     } catch (error) {
-      console.error('Error saving address:', error)
-      toast.error('Failed to save address')
+      console.error("Error saving address:", error);
+      toast.error("Failed to save address");
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Name <span className="text-gray-500">(Optional)</span>
         </label>
         <input
@@ -586,7 +649,10 @@ function AddressForm({ editingAddressId, onCancel, addresses, onAddressUpdate }:
       </div>
 
       <div>
-        <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="street"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Street Address
         </label>
         <input
@@ -602,7 +668,10 @@ function AddressForm({ editingAddressId, onCancel, addresses, onAddressUpdate }:
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="city"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             City
           </label>
           <input
@@ -616,7 +685,10 @@ function AddressForm({ editingAddressId, onCancel, addresses, onAddressUpdate }:
           />
         </div>
         <div>
-          <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="state"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             State
           </label>
           <input
@@ -632,7 +704,10 @@ function AddressForm({ editingAddressId, onCancel, addresses, onAddressUpdate }:
       </div>
 
       <div>
-        <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="zipCode"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           ZIP Code
         </label>
         <input
@@ -656,13 +731,13 @@ function AddressForm({ editingAddressId, onCancel, addresses, onAddressUpdate }:
         >
           Cancel
         </button>
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="px-4 py-2 bg-[#108a07] text-white rounded-md hover:bg-[#0c7206]"
         >
           {editingAddressId ? "Update Address" : "Save Address"}
         </button>
       </div>
     </form>
-  )
+  );
 }

@@ -41,6 +41,8 @@ interface CartItem {
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const auth = getAuth()
+  const user = auth.currentUser
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
@@ -77,18 +79,33 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   }, [params.id])
 
   const handleWishlistButton = async() => {
+    if (!user?.email) {
+      toast.error("Please login to add to wishlist");
+      router.push("/login");
+      return;
+    }
+  
     if (isFavorite) {
       toast.error("Product is already in wishlist");
       return;
     }
   
     try {
-      const response = await fetch(`/api/products/${params.id}`, {
-        method: 'PUT',
+      const response = await fetch('/api/wishlist', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ isFavorite: true }),
+        body: JSON.stringify({
+          email: user.email,
+          action: 'add',
+          product: {
+            productId: params.id,
+            name: product?.name,
+            price: product?.price,
+            image: product?.image,
+          }
+        }),
       });
   
       if (!response.ok) {
@@ -102,6 +119,25 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       toast.error('Failed to add to wishlist');
     }
   };
+
+  useEffect(() => {
+    const checkWishlist = async () => {
+      if (!user?.email || !params.id) return;
+  
+      try {
+        const response = await fetch(`/api/wishlist?email=${user.email}`);
+        if (!response.ok) throw new Error('Failed to fetch wishlist');
+  
+        const products = await response.json();
+        const isInWishlist = products.some((p: any) => p.productId === params.id);
+        setIsFavorite(isInWishlist);
+      } catch (error) {
+        console.error('Error checking wishlist:', error);
+      }
+    };
+  
+    checkWishlist();
+  }, [user?.email, params.id]);
 
   if (loading) {
     return (
@@ -175,27 +211,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     }
   }
 
-  const handleToggleFavorite = async () => {
-    try {
-      const response = await fetch(`/api/products/${params.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isFavorite: !isFavorite }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update wishlist')
-      }
-
-      setIsFavorite(!isFavorite)
-      toast.success(isFavorite ? 'Removed from wishlist' : 'Added to wishlist')
-    } catch (error) {
-      console.error('Error updating wishlist:', error)
-      toast.error('Failed to update wishlist')
-    }
-  }
 
   const formatDeliveryDate = (date: Date) => {
     return date.getDate() + (date.getDate() === 1 ? 'st' : date.getDate() === 2 ? 'nd' : date.getDate() === 3 ? 'rd' : 'th') + ' ' + 

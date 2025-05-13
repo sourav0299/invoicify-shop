@@ -44,12 +44,48 @@ interface UserProfile {
   isComplete?: boolean;
 }
 
+interface OrderItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+
+interface Order {
+  _id: string;
+  userEmail: string;
+  orderAmount: number;
+  paymentDetails: {
+    paymentId: string;
+    orderId: string;
+    signature: string;
+    status: 'pending' | 'completed' | 'failed';
+  };
+  shippingAddress: {
+    name: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  items: OrderItem[];
+  orderStatus: 'processing' | 'confirmed' | 'shipped' | 'delivered';
+  deliveryDate: {
+    expected: string;
+    actual?: string;
+  };
+  createdAt: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<"profile" | "orders">("profile");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false)
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [formData, setFormData] = useState<UserProfile>({
     name: "",
     phone: "",
@@ -57,6 +93,28 @@ export default function ProfilePage() {
     address: [],
     isComplete: false
   });
+
+  const fetchOrders = async (email: string) => {
+    try {
+      setOrdersLoading(true);
+      const response = await fetch(`/api/orders?email=${email}`);
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      
+      const data = await response.json();
+      setOrders(data);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to fetch orders');
+    }finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.email) {
+      fetchOrders(user.email);
+    }
+  }, [user?.email]);
 
   const fetchUserProfile = async (email: string) => {
     try {
@@ -372,30 +430,101 @@ export default function ProfilePage() {
   </div>
 
               </div>
-            ) : (
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-xl font-medium mb-6">Order History</h2>
-
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <ShoppingBag className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No orders yet
-                  </h3>
-                  <p className="text-gray-500 max-w-md mb-6">
-                    When you place your first order, it will appear here. You'll
-                    be able to track your orders and view your order history.
-                  </p>
-                  <Link
-                    href="/shop"
-                    className="px-6 py-3 bg-[#1a1a1a] text-white rounded-md hover:bg-black transition-colors"
-                  >
-                    Start Shopping
-                  </Link>
+            ) : activeTab === "orders" ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h2 className="text-xl font-medium mb-6">Order History</h2>
+              
+                  {ordersLoading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#108a07]"></div>
+                    </div>
+                  ) : orders.length > 0 ? (
+                    <div className="space-y-6">
+                      {orders.map((order) => (
+                        <div key={order._id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <p className="font-medium">Order #{order.paymentDetails.orderId.slice(-8)}</p>
+                              <p className="text-sm text-gray-500">
+                                Placed on {new Date(order.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">
+                                {new Intl.NumberFormat('en-IN', {
+                                  style: 'currency',
+                                  currency: 'INR'
+                                }).format(order.orderAmount)}
+                              </p>
+                              <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                                order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                                order.orderStatus === 'processing' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1)}
+                              </span>
+                            </div>
+                          </div>
+              
+                          <div className="space-y-3">
+                            {order.items.map((item) => (
+                              <div key={item.productId} className="flex items-center gap-4">
+                                <div className="w-16 h-16 relative">
+                                  <Image
+                                    src={item.image}
+                                    alt={item.name}
+                                    fill
+                                    className="object-cover rounded"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium">{item.name}</p>
+                                  <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                                </div>
+                                <p className="font-medium">
+                                  {new Intl.NumberFormat('en-IN', {
+                                    style: 'currency',
+                                    currency: 'INR'
+                                  }).format(item.price * item.quantity)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+              
+                          <div className="mt-4 pt-4 border-t">
+                            <p className="text-sm">
+                              Delivery to: {order.shippingAddress.name}<br />
+                              {order.shippingAddress.street}, {order.shippingAddress.city},<br />
+                              {order.shippingAddress.state} {order.shippingAddress.zipCode}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-2">
+                              Expected delivery by {new Date(order.deliveryDate.expected).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <ShoppingBag className="w-10 h-10 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No orders yet
+                      </h3>
+                      <p className="text-gray-500 max-w-md mb-6">
+                        When you place your first order, it will appear here. You'll be able to track your orders and view your order history.
+                      </p>
+                      <Link
+                        href="/shop"
+                        className="px-6 py-3 bg-[#1a1a1a] text-white rounded-md hover:bg-black transition-colors"
+                      >
+                        Start Shopping
+                      </Link>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </main>
