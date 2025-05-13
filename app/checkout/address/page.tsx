@@ -229,7 +229,7 @@ export default function AddressPage() {
           setPop(true);
           setTimeout(() => {
             clearCart();
-            router.push("/shop");
+            router.push("/profile");
           }, 9000);
         }catch(error){
           toast.error("Try again Later")
