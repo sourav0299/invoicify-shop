@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { notFound } from "next/navigation"
-import { ChevronDown, Minus, Plus, Star } from "lucide-react"
+import { ChevronDown, Star } from "lucide-react"
 import { useProductQuantityStore, useShoppingCartStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import toast from "react-hot-toast"
@@ -12,6 +12,7 @@ import { getProductRatings, getProductReviews } from "@/data/review"
 import FAQ from "@/components/faq"
 import ProductReviews from "@/components/product-reviews"
 import { getAuth } from "firebase/auth"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 
 interface Product {
   id: string
@@ -38,7 +39,6 @@ interface CartItem {
   quantity: number
 }
 
-
 export default function ProductPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const auth = getAuth()
@@ -47,9 +47,12 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
   const [isPincodeChecked, setPincodeChecked] = useState(false)
-  const [pincode, setPincode] = useState('')
+  const [pincode, setPincode] = useState("")
 
-  // Get product ratings and reviews from data
+  
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+ 
   const productRatings = getProductRatings(params.id)
   const productReviews = getProductReviews(params.id)
 
@@ -62,13 +65,13 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       try {
         const response = await fetch(`/api/products/${params.id}`)
         if (!response.ok) {
-          throw new Error('Product not found')
+          throw new Error("Product not found")
         }
         const data = await response.json()
         setProduct(data)
         setIsFavorite(data.isFavorite)
       } catch (error) {
-        console.error('Error fetching product:', error)
+        console.error("Error fetching product:", error)
         notFound()
       } finally {
         setLoading(false)
@@ -78,66 +81,66 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     fetchProduct()
   }, [params.id])
 
-  const handleWishlistButton = async() => {
+  const handleWishlistButton = async () => {
     if (!user?.email) {
-      toast.error("Please login to add to wishlist");
-      router.push("/login");
-      return;
+      toast.error("Please login to add to wishlist")
+      router.push("/login")
+      return
     }
-  
+
     if (isFavorite) {
-      toast.error("Product is already in wishlist");
-      return;
+      toast.error("Product is already in wishlist")
+      return
     }
-  
+
     try {
-      const response = await fetch('/api/wishlist', {
-        method: 'POST',
+      const response = await fetch("/api/wishlist", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: user.email,
-          action: 'add',
+          action: "add",
           product: {
             productId: params.id,
             name: product?.name,
             price: product?.price,
             image: product?.image,
-          }
+          },
         }),
-      });
-  
+      })
+
       if (!response.ok) {
-        throw new Error('Failed to update wishlist');
+        throw new Error("Failed to update wishlist")
       }
-  
-      setIsFavorite(true);
-      toast.success('Added to wishlist');
+
+      setIsFavorite(true)
+      toast.success("Added to wishlist")
     } catch (error) {
-      console.error('Error updating wishlist:', error);
-      toast.error('Failed to add to wishlist');
+      console.error("Error updating wishlist:", error)
+      toast.error("Failed to add to wishlist")
     }
-  };
+  }
 
   useEffect(() => {
     const checkWishlist = async () => {
-      if (!user?.email || !params.id) return;
-  
+      if (!user?.email || !params.id) return
+
       try {
-        const response = await fetch(`/api/wishlist?email=${user.email}`);
-        if (!response.ok) throw new Error('Failed to fetch wishlist');
-  
-        const products = await response.json();
-        const isInWishlist = products.some((p: any) => p.productId === params.id);
-        setIsFavorite(isInWishlist);
+        const response = await fetch(`/api/wishlist?email=${user.email}`)
+        if (!response.ok) throw new Error("Failed to fetch wishlist")
+
+        const products = await response.json()
+        const isInWishlist = products.some((p: any) => p.productId === params.id)
+        setIsFavorite(isInWishlist)
       } catch (error) {
-        console.error('Error checking wishlist:', error);
+        console.error("Error checking wishlist:", error)
       }
-    };
-  
-    checkWishlist();
-  }, [user?.email, params.id]);
+    }
+
+    checkWishlist()
+  }, [user?.email, params.id])
 
   if (loading) {
     return (
@@ -162,64 +165,67 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const handleAddToCart = async () => {
     const auth = getAuth()
     const user = auth.currentUser
-  
+
     if (!user?.email) {
       toast.error("Please login to add items to cart")
       router.push("/login")
       return
     }
-  
+
     if (!product) return
-  
+
     try {
       const cartItem: CartItem = {
         productId: product.id,
         name: product.name,
         price: product.price,
         image: product.image,
-        quantity: quantity
+        quantity: quantity,
       }
-  
-      const response = await fetch('/api/cart', {
-        method: 'POST',
+
+      const response = await fetch("/api/cart", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: user.email,
-          item: cartItem
-        })
+          item: cartItem,
+        }),
       })
-  
+
       if (!response.ok) {
-        throw new Error('Failed to add item to cart')
+        throw new Error("Failed to add item to cart")
       }
-  
-      toast.success('Added to cart successfully')
+
+      toast.success("Added to cart successfully")
       router.push("/cart")
     } catch (error) {
-      console.error('Error adding to cart:', error)
-      toast.error('Failed to add item to cart')
+      console.error("Error adding to cart:", error)
+      toast.error("Failed to add item to cart")
     }
   }
 
   const handlePincode = () => {
-    if(pincode.length === 6){
+    if (pincode.length === 6) {
       setPincodeChecked(true)
-    }else{
+    } else {
       toast.error("Invalid Pincode")
     }
   }
 
-
   const formatDeliveryDate = (date: Date) => {
-    return date.getDate() + (date.getDate() === 1 ? 'st' : date.getDate() === 2 ? 'nd' : date.getDate() === 3 ? 'rd' : 'th') + ' ' + 
-      date.toLocaleString('default', { month: 'short' })
+    return (
+      date.getDate() +
+      (date.getDate() === 1 ? "st" : date.getDate() === 2 ? "nd" : date.getDate() === 3 ? "rd" : "th") +
+      " " +
+      date.toLocaleString("default", { month: "short" })
+    )
   }
-  const Day = 1*24*60*60*1000
+  const Day = 1 * 24 * 60 * 60 * 1000
 
-  const FastestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (7 * Day)));
-  const SlowestDeliveryDate = formatDeliveryDate(new Date(Date.now() + (14 * Day)));
+  const FastestDeliveryDate = formatDeliveryDate(new Date(Date.now() + 7 * Day))
+  const SlowestDeliveryDate = formatDeliveryDate(new Date(Date.now() + 14 * Day))
 
   return (
     <div className="bg-white min-h-screen">
@@ -228,22 +234,46 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       <main className="pt-[180px] px-4 md:px-8 lg:px-16 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
           <div className="space-y-4">
-            <div className="relative w-full aspect-square overflow-hidden rounded-lg">
-              <Image
-                src={product.image || "/placeholder.svg?height=600&width=600&query=emerald+necklace"}
-                alt={product.name}
-                fill
-                className="object-cover"
-                priority
+            <Carousel className="w-full" currentIndex={currentImageIndex} onIndexChange={setCurrentImageIndex}>
+              <CarouselContent>
+                {[1, 2, 3, 4].map((i) => (
+                  <CarouselItem key={i}>
+                    <div className="relative w-full aspect-square overflow-hidden rounded-lg">
+                      <Image
+                        src={product.image || `/placeholder.svg?height=600&width=600&query=emerald+necklace+view+${i}`}
+                        alt={`${product.name} view ${i}`}
+                        fill
+                        className="object-cover"
+                        priority={i === 1}
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious
+                className="left-4"
+                onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : 3))}
               />
-            </div>
+              <CarouselNext
+                className="right-4"
+                onClick={() => setCurrentImageIndex((prev) => (prev < 3 ? prev + 1 : 0))}
+              />
+            </Carousel>
 
-            <div className="flex gap-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="relative w-24 h-24 overflow-hidden rounded-lg border border-gray-200">
+            <div className="flex gap-4 justify-center">
+              {[1, 2, 3, 4].map((i, index) => (
+                <div
+                  key={i}
+                  className={`relative w-20 h-20 overflow-hidden rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                    currentImageIndex === index
+                      ? "border-[#1a1a1a] ring-2 ring-[#1a1a1a] ring-opacity-20"
+                      : "border-gray-200 hover:border-gray-400"
+                  }`}
+                  onClick={() => setCurrentImageIndex(index)}
+                >
                   <Image
-                    src={product.image || "/placeholder.svg?height=100&width=100&query=emerald+necklace"}
-                    alt={`${product.name} view ${i}`}
+                    src={product.image || `/placeholder.svg?height=100&width=100&query=emerald+necklace+thumbnail+${i}`}
+                    alt={`${product.name} thumbnail ${i}`}
                     fill
                     className="object-cover"
                   />
@@ -263,9 +293,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               <p className="text-3xl font-medium text-[#1a1a1a]">{formattedPrice}</p>
             </div>
 
-            <p className="text-[#1a1a1a] leading-relaxed">
-              {product.description}
-            </p>
+            <p className="text-[#1a1a1a] leading-relaxed">{product.description}</p>
 
             <div className="flex items-center">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -275,9 +303,10 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="flex gap-4">
-              <button 
-              onClick={handleWishlistButton}
-              className="flex-1 py-3 px-4 border border-[#1a1a1a] rounded-md text-[#1a1a1a] font-medium">
+              <button
+                onClick={handleWishlistButton}
+                className="flex-1 py-3 px-4 border border-[#1a1a1a] rounded-md text-[#1a1a1a] font-medium"
+              >
                 Add to Wishlist
               </button>
               <button
@@ -297,10 +326,15 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   placeholder="Enter Pincode"
                   className="flex-1 px-4 py-2 border border-[#cccccc] rounded-l-md focus:outline-none"
                 />
-                <button onClick={() => handlePincode()} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">Check</button>
+                <button onClick={() => handlePincode()} className="px-4 py-2 bg-[#1a1a1a] text-white rounded-r-md">
+                  Check
+                </button>
               </div>
-              { isPincodeChecked ? (
-                <p className="text-sm text-red-400">Free Delivery if ordered today Get it by <strong>{FastestDeliveryDate}</strong> to <strong>{SlowestDeliveryDate}</strong></p>
+              {isPincodeChecked ? (
+                <p className="text-sm text-red-400">
+                  Free Delivery if ordered today Get it by <strong>{FastestDeliveryDate}</strong> to{" "}
+                  <strong>{SlowestDeliveryDate}</strong>
+                </p>
               ) : (
                 <p className="">Please enter PIN code to check delivery time.</p>
               )}
