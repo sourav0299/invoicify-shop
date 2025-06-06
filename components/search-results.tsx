@@ -78,7 +78,7 @@ export default function SearchResults({ query, isVisible, onClose, textColor }: 
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-gray-900 truncate">{product.name}</h4>
                 <p className="text-xs text-gray-500 truncate">{product.category}</p>
-                <p className="text-sm font-semibold text-gray-900">${product.price}</p>
+                <p className="text-sm font-semibold text-gray-900">₹{product.price}</p>
               </div>
             </Link>
           ))}

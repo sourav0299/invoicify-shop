@@ -22,10 +22,57 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+// Speech Recognition interfaces
+interface SpeechRecognitionResult {
+  transcript: string
+  confidence: number
+}
+
+interface SpeechRecognitionResultList {
+  length: number
+  item(index: number): SpeechRecognitionResult
+  [index: number]: SpeechRecognitionResult[]
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList
+  resultIndex: number
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string
+  message?: string
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start(): void
+  stop(): void
+  abort(): void
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null
+}
+
+// Define the constructor type
+type SpeechRecognitionConstructor = new () => SpeechRecognition
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor
+    webkitSpeechRecognition?: SpeechRecognitionConstructor
+  }
+}
+
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [isListening, setIsListening] = useState(false)
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null)
   const pathname = usePathname()
   const router = useRouter()
   const searchRef = useRef<HTMLDivElement>(null)
@@ -61,6 +108,47 @@ export default function Navbar() {
     }
   }, [debouncedSearchQuery])
 
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Get the appropriate speech recognition constructor
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition
+
+      if (SpeechRecognitionAPI) {
+        try {
+          const recognitionInstance = new SpeechRecognitionAPI()
+
+          recognitionInstance.continuous = false
+          recognitionInstance.interimResults = false
+          recognitionInstance.lang = "en-US"
+
+          recognitionInstance.onstart = () => {
+            setIsListening(true)
+          }
+
+          recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+            const transcript = event.results[0][0].transcript
+            setSearchQuery(transcript)
+            setIsListening(false)
+          }
+
+          recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
+            console.error("Speech recognition error:", event.error)
+            setIsListening(false)
+          }
+
+          recognitionInstance.onend = () => {
+            setIsListening(false)
+          }
+
+          setRecognition(recognitionInstance)
+        } catch (error) {
+          console.error("Error initializing speech recognition:", error)
+        }
+      }
+    }
+  }, [])
+
   const handleSearchFocus = () => {
     if (searchQuery.trim()) {
       setShowSearchResults(true)
@@ -77,6 +165,19 @@ export default function Navbar() {
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
       setShowSearchResults(false)
+    }
+  }
+
+  const handleVoiceSearch = () => {
+    if (!recognition) {
+      alert("Speech recognition is not supported in your browser")
+      return
+    }
+
+    if (isListening) {
+      recognition.stop()
+    } else {
+      recognition.start()
     }
   }
 
@@ -131,8 +232,9 @@ export default function Navbar() {
                   )}
                   <button
                     type="button"
-                    aria-label="Voice search"
-                    className={`ml-1 ${textColor}/70 hover:${textColor} transition-colors`}
+                    onClick={handleVoiceSearch}
+                    aria-label={isListening ? "Stop voice search" : "Start voice search"}
+                    className={`ml-1 ${textColor}/70 hover:${textColor} transition-colors ${isListening ? "animate-pulse text-red-500" : ""}`}
                   >
                     <Mic className="h-4 w-4" />
                   </button>
