@@ -49,10 +49,8 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [isPincodeChecked, setPincodeChecked] = useState(false)
   const [pincode, setPincode] = useState("")
 
-  
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
- 
   const productRatings = getProductRatings(params.id)
   const productReviews = getProductReviews(params.id)
 
@@ -348,19 +346,19 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
               <div className="mt-4 space-y-2 text-[#1a1a1a]">
                 <p>
-                  <span className="font-medium">Material:</span> Emerald, Diamond and Platinum
+                  <span className="font-medium">Material:</span> {product.material || "Emerald, Diamond and Platinum"}
                 </p>
                 <p>
-                  <span className="font-medium">Occasion:</span> Wedding and Formal
+                  <span className="font-medium">Occasion:</span> {product.occasion || "Wedding and Formal"}
                 </p>
                 <p>
-                  <span className="font-medium">Shop for:</span> Woman
+                  <span className="font-medium">Shop for:</span> {product.shopFor || "Woman"}
                 </p>
                 <p>
-                  <span className="font-medium">Product weight:</span> 200g
+                  <span className="font-medium">Product weight:</span> {product.weight || "200g"}
                 </p>
                 <p>
-                  <span className="font-medium">Occasion:</span> Wedding and Formal
+                  <span className="font-medium">Category:</span> {product.category}
                 </p>
               </div>
             </div>

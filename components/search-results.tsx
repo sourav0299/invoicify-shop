@@ -52,7 +52,7 @@ export default function SearchResults({ query, isVisible, onClose, textColor }: 
   if (!isVisible) return null
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto z-[100]">
+    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto z-[9999]">
       {loading ? (
         <div className="flex items-center justify-center p-4">
           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
@@ -63,9 +63,9 @@ export default function SearchResults({ query, isVisible, onClose, textColor }: 
           {products.map((product) => (
             <Link
               key={product.id}
-              href={`/products/${product.id}`}
+              href={`/product/${product.id}`}
               onClick={onClose}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
             >
               <div className="w-12 h-12 relative flex-shrink-0">
                 <Image
@@ -78,7 +78,7 @@ export default function SearchResults({ query, isVisible, onClose, textColor }: 
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-gray-900 truncate">{product.name}</h4>
                 <p className="text-xs text-gray-500 truncate">{product.category}</p>
-                <p className="text-sm font-semibold text-gray-900">₹{product.price}</p>
+                <p className="text-sm font-semibold text-gray-900">₹{product.price.toLocaleString()}</p>
               </div>
             </Link>
           ))}
