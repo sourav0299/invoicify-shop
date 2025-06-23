@@ -78,6 +78,16 @@ export default function AddressPage() {
     total: 0,
   });
 
+  const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = resolve;
+    document.body.appendChild(script);
+  });
+};
+
   const calculateTotals = (items: CartItem[]) => {
     const subtotal = items.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -155,6 +165,8 @@ export default function AddressPage() {
   };
 
   const handleContinue = async (amount: number) => {
+    await loadRazorpayScript();
+
     try {
       if (!user?.email) {
         toast.error("Please Login to continue");
