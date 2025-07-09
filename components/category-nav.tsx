@@ -10,14 +10,14 @@ export default function CategoryNav() {
   const textColor = isHomePage ? "text-white" : "text-black"
 
   const categories = [
-    { name: "All jewelry", href: "/category/rings", icon: LayoutGrid },
-    { name: "Gold", href: "/category/earrings", icon: CircleDollarSign },
-    { name: "Diamond", href: "/category/necklaces", icon: Diamond },
-    { name: "Earrings", href: "/category/bracelets", icon: Ear },
-    { name: "Rings", href: "/category/pendants", icon: CircleDot },
-    { name: "Daily wear", href: "/category/anklets", icon: Watch },
-    { name: "Collections", href: "/category/watches", icon: Layers },
-    { name: "Gifting", href: "/collections", icon: Gift },
+    { name: "All jewelry", href: "/shop", icon: LayoutGrid },
+    { name: "Gold", href: "/shop", icon: CircleDollarSign },
+    { name: "Diamond", href: "/shop", icon: Diamond },
+    { name: "Earrings", href: "/shop", icon: Ear },
+    { name: "Rings", href: "/shop", icon: CircleDot },
+    { name: "Daily wear", href: "/shop", icon: Watch },
+    { name: "Collections", href: "/shop", icon: Layers },
+    { name: "Gifting", href: "/shop", icon: Gift },
   ]
 
   return (
