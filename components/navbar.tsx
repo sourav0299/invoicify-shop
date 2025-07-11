@@ -183,7 +183,7 @@ export default function Navbar() {
   return (
     <>
       {/* Fixed navbar with consistent height */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent">
+      <nav className="absolute top-0 left-0 right-0 z-50 bg-transparent">
         <div className="container mx-auto px-4 lg:px-16 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

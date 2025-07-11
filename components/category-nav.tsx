@@ -49,7 +49,7 @@ export default function CategoryNav() {
   ]
 
   return (
-    <div className="fixed top-[88px] left-0 right-0 z-40 bg-transparent">
+    <div className="absolute top-[88px] left-0 right-0 z-40 bg-transparent">
       <div className="container mx-auto px-4 lg:px-16">
         <div className="flex items-center justify-center py-4">
           <ul className="flex items-center justify-between gap-4 lg:gap-8 w-full max-w-6xl">
